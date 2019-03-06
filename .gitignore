@@ -1,0 +1,11 @@
+# CSV files
+*.csv
+
+# local folders
+Hyper-V*/*
+temp_to_del/*
+Urmas/*
+ylar/*
+test/*
+ExpressPost/reggy4.*
+Veeam/old/*
