@@ -1,9 +1,9 @@
-﻿#Requires -version 2.0
-#Requires -Modules ActiveDirectory
+﻿#Requires -Version 2.0
+# Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
 
-    .VERSION 1.4.2
+    .VERSION 1.4.3
 
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
@@ -27,20 +27,17 @@
 
     .EXTERNALSCRIPTDEPENDENCIES
 
-    .RELEASENOTES
-        [1.4.3] - 2019-03-06 - changed default config file path to
-        [1.4.2] - 2019-03-06 - Minor formatting changes
-        [1.4.1] - 2014-09-06 - Initial release to Technet Script Gallery
+    .RELEASENOTES https://github.com/peetrike/scripts/blob/master/Send-PasswordNotification/CHANGELOG.md
 
     .PRIVATEDATA
 
 #>
 
 <#
-	.SYNOPSIS
-		Sends e-mail notification to users whose password is about to expire.
+    .SYNOPSIS
+        Sends e-mail notification to users whose password is about to expire.
 
-	.DESCRIPTION
+    .DESCRIPTION
 		Script is meant to send e-mail notifications about expiring passwords.
 		The notification is sent only to users who:
 			1. are enabled
@@ -62,15 +59,15 @@
     .PARAMETER Confirm
         Prompts you for confirmation before sending out e-mail messages
 
-	.EXAMPLE
-		PS C:\> Send-PasswordNotification.ps1 -DaysBefore 5,1
+    .EXAMPLE
+        PS C:\> Send-PasswordNotification.ps1 -DaysBefore 5,1
 
-		Sends e-mail to users, whose password expires within 5 or 1 days.
+        Sends e-mail to users, whose password expires within 5 or 1 days.
 
-	.EXAMPLE
-		PS C:\> Send-PasswordNotification.ps1 7 -configFile my.config
+    .EXAMPLE
+        PS C:\> Send-PasswordNotification.ps1 7 -configFile my.config
 
-		Sends notification 7 days before password expires.  Uses custom configuration file.
+        Sends notification 7 days before password expires.  Uses custom configuration file.
 
     .INPUTS
         List of days before password expiration
@@ -90,16 +87,11 @@
         		<useSamAccountName />
         -->
         	</user>
-        	<server>mail</server>
+        	<server>mail.server</server>
         	<mail>
         		<from>PasswordNotifier@localhost</from>
-        		<subject>Sinu parool aegub varsti</subject>
-        		<body>Kallis kasutaja,
-
-        Sinu konto ({0}) parool aegub {1} päeva pärast.
-        Muuda palun esimesel võimalusel oma parooli.
-
-        Dear User,
+        		<subject>Your password will expire soon </subject>
+        		<body>Dear User,
 
         Password of Your user account ({0}) expires in {1} days.
         Please change Your password ASAP.
@@ -107,11 +99,11 @@
         	</mail>
         </config>
 
-	.LINK
-		about_ActiveDirectory
+    .LINK
+        about_ActiveDirectory
 
-	.LINK
-		Send-MailMessage
+    .LINK
+        Send-MailMessage
 #>
 
 [cmdletbinding(
@@ -140,7 +132,7 @@ param (
         })]
         [String]
         # Configuration file to read.  By default the config file is in the same directory as script and has the same name with .config extension.
-    $configFile = $(Join-Path -Path (Split-Path -Path $MyInvocation.MyCommand.Path) -ChildPath ($MyInvocation.MyCommand.Name.split(".")[0] + '.config')),
+    $ConfigFile = $(Join-Path -Path (Split-Path -Path $MyInvocation.MyCommand.Path) -ChildPath ($MyInvocation.MyCommand.Name.split(".")[0] + '.config')),
         [parameter(
             Mandatory = $true,
             ParameterSetName = 'Version'
@@ -150,37 +142,32 @@ param (
     $Version
 )
 
-# Set-StrictMode -Version Latest
-
-# Script version
-Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.4.2' -WhatIf:$false -Confirm:$false
+    # Script version
+Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.4.3' -WhatIf:$false -Confirm:$false
 
 if ($PSCmdlet.ParameterSetName -like 'Version') {
     "Version $Ver"
     exit 3
 }
 
-# check for required module
+    # check for required module
 if (Get-Module ActiveDirectory) {
-    # module already loaded
+    Write-Verbose -Message 'Active Directory module already loaded'
 } elseif (Get-Module ActiveDirectory -ListAvailable ) {
     Import-Module ActiveDirectory
 } else {
     throw 'No Active Directory module installed'
 }
 
-$configFilePath = $configFile
+Write-Verbose -Message "Loading Config file: $ConfigFile"
+$conf = [xml](Get-Content -Path $ConfigFile)
 
-Write-Verbose -Message "Loading Config file: $configFilePath"
-$conf = [xml](Get-Content -Path $configFilePath)
+    # get Max Password age from Domain Policy
+$MaxPasswordAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge
+Write-Debug -Message $MaxPasswordAge
 
-# get Max Password age from Domain Policy
-$maxPwdAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge
-Write-Debug -Message $maxPwdAge
-
-# Get Domain functional level.
-$domainFunctionalLevel = (Get-ADDomain).DomainMode
-$userDomain = (Get-ADDomain).NetBIOSName
+    # Get Domain functional level.
+$AdDomain = Get-ADDomain
 
 $mailSettings = @{
     Subject    = $conf.config.mail.subject
@@ -191,45 +178,42 @@ $mailSettings = @{
     Body       = ''
 }
 
-# get users
-Get-ADUser -Filter {Enabled -eq $true -and PasswordNeverExpires -eq $false -and PasswordExpired -eq $false -and logonCount -ge 1 -and Mail -like '*'} -Properties PasswordLastSet, mail |
-    Where-Object {! $_.CannotChangePassword} |
+    # get users
+Get-ADUser -Filter {Enabled -eq $true -and PasswordNeverExpires -eq $false -and PasswordExpired -eq $false -and logonCount -ge 1 -and mail -like '*'} -Properties PasswordLastSet, mail |
+    Where-Object {-not $_.CannotChangePassword} |
     ForEach-Object {
-    if ($domainFunctionalLevel -ge 3) {
-        ## Windows2008 domain functional level or greater
-        $accountFGPP = Get-ADUserResultantPasswordPolicy -Identity $_
-        if ($accountFGPP -ne $null) {
-            $pwdAge = $accountFGPP.MaxPasswordAge
-        } else {
-            $pwdAge = $maxPwdAge
+        $PasswordAge = $MaxPasswordAge
+        if ($AdDomain.DomainMode -ge 3) {
+                # [Microsoft.ActiveDirectory.Management.ADDomainMode]::Windows2008Domain
+            $accountFGPP = Get-ADUserResultantPasswordPolicy -Identity $_
+            if ($accountFGPP) {
+                $PasswordAge = $accountFGPP.MaxPasswordAge
+            }
         }
-    } else {
-        $pwdAge = $maxPwdAge
-    }
-    Write-Debug -Message "pwdAge = $pwdAge"
+        Write-Debug -Message "pwdAge = $PasswordAge"
 
-    # TODO: check for PasswordLastSet attribute existence
-    $pwdDays = ($_.passwordlastset.Add($PwdAge) - (Get-Date)).days
-    Write-Debug -Message "pwdDays = $pwdDays"
+            # TODO: check for PasswordLastSet attribute existence
+        $PasswordDays = ($_.PasswordLastSet.Add($PasswordAge) - [datetime]::Now).days
+        Write-Debug -Message "pwdDays = $PasswordDays"
 
-    if ($conf.config.user.item('useSamAccountName')) {
-        $userName = '{0}\{1}' -f $userDomain, $_.SamAccountName
-    } else {
-        $userName = $_.UserPrincipalName
-    }
-    $userMail = $_.mail
-    if ($pwdDays -ge 1) {
-        foreach ($day in $DaysBefore) {
-            Write-Debug -Message "Processing day $day, user $userName"
-            if ($pwdDays -eq $day) {
-                $mailSettings.To = $userMail
-                $mailSettings.Body = ($conf.config.mail.body -f $userName, $day)
-                if ($PSCmdLet.ShouldProcess($userMail, 'Send e-mail message')) {
-                    Send-MailMessage @mailSettings
+        if ($conf.config.user.item('useSamAccountName')) {
+            $userName = '{0}\{1}' -f $AdDomain.NetBIOSName, $_.SamAccountName
+        } else {
+            $userName = $_.UserPrincipalName
+        }
+        $userMail = $_.mail
+        if ($PasswordDays -ge 1) {
+            foreach ($day in $DaysBefore) {
+                Write-Debug -Message "Processing day $day, user $userName"
+                if ($PasswordDays -eq $day) {
+                    $mailSettings.To = $userMail
+                    $mailSettings.Body = ($conf.config.mail.body -f $userName, $day)
+                    if ($PSCmdLet.ShouldProcess($userMail, 'Send e-mail message')) {
+                        Send-MailMessage @mailSettings
+                    }
+                        # Write-Debug $mailSettings.Body
+                    Write-Verbose -Message "User $username ($userMail), password expires in $day days."
                 }
-                #					Write-Debug $mailBody
-                Write-Verbose -Message "User $username ($userMail), password expires in $day days."
             }
         }
     }
-}

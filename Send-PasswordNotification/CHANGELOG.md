@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 ### Added
 
 - added config file path checking
+- established separate changelog
 
 ## [1.4.2] 2019-03-06
 
