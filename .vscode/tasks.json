@@ -13,10 +13,6 @@
 //
 // PS C:\> Install-Module Pester -Scope CurrentUser -Force
 //
-// NOTE: The Clean, Build and Publish tasks require PSake. PSake can be installed
-// from the PowerShell Gallery with this command:
-//
-// PS C:\> Install-Module PSake -Scope CurrentUser -Force
 //
 // Available variables which can be used inside of strings:
 // ${workspaceFolder} the path of the workspace folder that contains the tasks.json file
