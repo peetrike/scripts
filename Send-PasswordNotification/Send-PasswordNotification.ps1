@@ -1,5 +1,5 @@
-﻿#Requires -Version 2.0
-# Requires -Modules ActiveDirectory
+﻿#Requires -Version 3.0
+#Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
 
@@ -80,6 +80,7 @@
 
         <?xml version="1.0" encoding="utf-8" ?>
         <config>
+            <ou></ou> <!-- Search base OU, if needed -->
         	<user>
         		<!-- If the next element exist, the script refers to user as domain\samAccountName -->
         		<!-- Otherwise, the script refers to user as userPrincipalName -->
@@ -132,7 +133,7 @@ param (
         })]
         [String]
         # Configuration file to read.  By default the config file is in the same directory as script and has the same name with .config extension.
-    $ConfigFile = $(Join-Path -Path (Split-Path -Path $MyInvocation.MyCommand.Path) -ChildPath ($MyInvocation.MyCommand.Name.split(".")[0] + '.config')),
+    $ConfigFile = $(Join-Path -Path $PSScriptRoot -ChildPath ((get-item $PSCommandPath).BaseName + '.config')),
         [parameter(
             Mandatory = $true,
             ParameterSetName = 'Version'
@@ -143,7 +144,7 @@ param (
 )
 
     # Script version
-Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.4.3' -WhatIf:$false -Confirm:$false
+Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.5.0' -WhatIf:$false -Confirm:$false
 
 if ($PSCmdlet.ParameterSetName -like 'Version') {
     "Version $Ver"
@@ -151,13 +152,13 @@ if ($PSCmdlet.ParameterSetName -like 'Version') {
 }
 
     # check for required module
-if (Get-Module ActiveDirectory) {
+<# if (Get-Module ActiveDirectory) {
     Write-Verbose -Message 'Active Directory module already loaded'
 } elseif (Get-Module ActiveDirectory -ListAvailable ) {
     Import-Module ActiveDirectory
 } else {
     throw 'No Active Directory module installed'
-}
+} #>
 
 Write-Verbose -Message "Loading Config file: $ConfigFile"
 $conf = [xml](Get-Content -Path $ConfigFile)
@@ -179,12 +180,19 @@ $mailSettings = @{
 }
 
     # get users
-Get-ADUser -Filter {Enabled -eq $true -and PasswordNeverExpires -eq $false -and PasswordExpired -eq $false -and logonCount -ge 1 -and mail -like '*'} -Properties PasswordLastSet, mail |
+$searchProperties = @{
+    Filter = 'Enabled -eq $true -and PasswordNeverExpires -eq $false -and PasswordExpired -eq $false -and logonCount -ge 1 -and mail -like "*"'
+    Properties = 'PasswordLastSet', 'mail'
+}
+if ($conf.config.ou) {
+    $searchProperties.SearchBase = $conf.config.ou
+    #$searchProperties.SearchScope = 'Subtree'
+}
+Get-ADUser @searchProperties |
     Where-Object {-not $_.CannotChangePassword} |
     ForEach-Object {
         $PasswordAge = $MaxPasswordAge
-        if ($AdDomain.DomainMode -ge 3) {
-                # [Microsoft.ActiveDirectory.Management.ADDomainMode]::Windows2008Domain
+        if ($AdDomain.DomainMode -ge 3) {   # [Microsoft.ActiveDirectory.Management.ADDomainMode]::Windows2008Domain
             $accountFGPP = Get-ADUserResultantPasswordPolicy -Identity $_
             if ($accountFGPP) {
                 $PasswordAge = $accountFGPP.MaxPasswordAge
@@ -211,7 +219,7 @@ Get-ADUser -Filter {Enabled -eq $true -and PasswordNeverExpires -eq $false -and 
                     if ($PSCmdLet.ShouldProcess($userMail, 'Send e-mail message')) {
                         Send-MailMessage @mailSettings
                     }
-                        # Write-Debug $mailSettings.Body
+                    # Write-Debug $mailSettings.Body
                     Write-Verbose -Message "User $username ($userMail), password expires in $day days."
                 }
             }
