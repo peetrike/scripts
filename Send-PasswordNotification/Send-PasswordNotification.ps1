@@ -165,7 +165,7 @@ $conf = [xml](Get-Content -Path $ConfigFile)
 
     # get Max Password age from Domain Policy
 $MaxPasswordAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge
-Write-Debug -Message $MaxPasswordAge
+Write-Debug -Message ('Max Password Age: {0}' -f $MaxPasswordAge)
 
     # Get Domain functional level.
 $AdDomain = Get-ADDomain
