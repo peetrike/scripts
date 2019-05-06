@@ -3,7 +3,7 @@
 
 <#PSScriptInfo
 
-    .VERSION 1.5.0
+    .VERSION 1.5.1
 
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
@@ -144,7 +144,7 @@ param (
 )
 
     # Script version
-Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.5.0' -WhatIf:$false -Confirm:$false
+Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.5.1' -WhatIf:$false -Confirm:$false
 
 if ($PSCmdlet.ParameterSetName -like 'Version') {
     "Version $Ver"
