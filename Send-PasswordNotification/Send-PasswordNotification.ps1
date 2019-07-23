@@ -2,35 +2,20 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-
-    .VERSION 1.5.1
-
+    .VERSION 1.5.2
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
-
     .AUTHOR Peter Wawa
-
     .COMPANYNAME !ZUM!
-
     .COPYRIGHT (c) 2019 Peter Wawa.  All rights reserved.
-
-    .TAGS password, e-mail, notification
-
+    .TAGS password, password, e-mail, email, notification, Windows, PSEdition_Desktop, PSEdition_Core
     .LICENSEURI https://github.com/peetrike/scripts/blob/master/LICENSE
-
     .PROJECTURI https://github.com/peetrike/scripts
-
     .ICONURI
-
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
-
     .REQUIREDSCRIPTS
-
     .EXTERNALSCRIPTDEPENDENCIES
-
     .RELEASENOTES https://github.com/peetrike/scripts/blob/master/Send-PasswordNotification/CHANGELOG.md
-
     .PRIVATEDATA
-
 #>
 
 <#
@@ -131,6 +116,7 @@ param (
                 throw 'Config file not found'
             }
         })]
+        [PSDefaultValue(Help = '<scriptname>.config in the same folder as script')]
         [String]
         # Configuration file to read.  By default the config file is in the same directory as script and has the same name with .config extension.
     $ConfigFile = $(Join-Path -Path $PSScriptRoot -ChildPath ((get-item $PSCommandPath).BaseName + '.config')),
@@ -144,21 +130,13 @@ param (
 )
 
     # Script version
-Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.5.1' -WhatIf:$false -Confirm:$false
+Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.5.2' -WhatIf:$false -Confirm:$false
 
 if ($PSCmdlet.ParameterSetName -like 'Version') {
     "Version $Ver"
     exit 3
 }
 
-    # check for required module
-<# if (Get-Module ActiveDirectory) {
-    Write-Verbose -Message 'Active Directory module already loaded'
-} elseif (Get-Module ActiveDirectory -ListAvailable ) {
-    Import-Module ActiveDirectory
-} else {
-    throw 'No Active Directory module installed'
-} #>
 
 Write-Verbose -Message "Loading Config file: $ConfigFile"
 $conf = [xml](Get-Content -Path $ConfigFile)
@@ -200,7 +178,6 @@ Get-ADUser @searchProperties |
         }
         Write-Debug -Message "pwdAge = $PasswordAge"
 
-            # TODO: check for PasswordLastSet attribute existence
         $PasswordDays = ($_.PasswordLastSet.Add($PasswordAge) - [datetime]::Now).days
         Write-Debug -Message "pwdDays = $PasswordDays"
 
@@ -219,7 +196,7 @@ Get-ADUser @searchProperties |
                     if ($PSCmdLet.ShouldProcess($userMail, 'Send e-mail message')) {
                         Send-MailMessage @mailSettings
                     }
-                    # Write-Debug $mailSettings.Body
+                    # Write-Debug ('Message body: {0}' -f $mailSettings.Body)
                     Write-Verbose -Message "User $username ($userMail), password expires in $day days."
                 }
             }
