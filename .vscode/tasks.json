@@ -78,7 +78,28 @@
     {
       "label": "Publish",
       "type": "shell",
-      "command": "Publish-Script -Path ${file} -Repository ${input:Repository}"
+      "command": "Publish-Script -Path ${file} -Repository ${input:Repository}",
+      "problemMatcher": [
+      {
+        "owner": "powershell",
+        "fileLocation": [
+          "absolute"
+        ],
+        "severity": "error",
+        "pattern": [
+          {
+            "regexp": "(.+)",
+            "message": 1
+          },
+          {
+            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          }
+        ]
+      }
+      ]
     },
     {
       "label": "Add script",
