@@ -21,7 +21,7 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 # Xml files
-[*.xml]
+[*.{xml,config}]
 indent_size = 2
 
 # Poweershell xml files
