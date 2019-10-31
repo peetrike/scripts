@@ -26,72 +26,151 @@
 // ${cwd} the task runner's current working directory on startup
 // ${lineNumber} the current selected line number in the active file
 {
-    "version": "2.0.0",
-    "windows": {
-        "options": {
-            "shell": {
-                "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-                "args": [
-                    "-NoProfile",
-                    "-ExecutionPolicy",
-                    "Bypass",
-                    "-Command"
-                ]
-            }
-        }
+  "version": "2.0.0",
+  "windows": {
+    "options": {
+      "shell": {
+        "executable": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+        "args": [
+          "-NoProfile",
+          "-ExecutionPolicy",
+          "Bypass",
+          "-Command"
+        ]
+      }
+    }
+  },
+  "linux": {
+    "options": {
+      "shell": {
+        "executable": "/usr/bin/pwsh",
+        "args": [
+          "-NoProfile",
+          "-Command"
+        ]
+      }
+    }
+  },
+  "osx": {
+    "options": {
+      "shell": {
+        "executable": "/usr/local/bin/pwsh",
+        "args": [
+          "-NoProfile",
+          "-Command"
+        ]
+      }
+    }
+  },
+  "tasks": [
+    {
+      "label": "Test",
+      "type": "shell",
+      "command": "Invoke-Pester -PesterOption @{IncludeVSCodeMarker=$true}",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": [
+        "$pester"
+      ]
     },
-    "linux": {
-        "options": {
-            "shell": {
-                "executable": "/usr/bin/pwsh",
-                "args": [
-                    "-NoProfile",
-                    "-Command"
-                ]
-            }
-        }
+    {
+      "label": "Publish",
+      "type": "shell",
+      "command": "Publish-Script -Path ${file} -Repository ${input:Repository}",
+      "problemMatcher": [
+      {
+        "owner": "powershell",
+        "fileLocation": [
+          "absolute"
+        ],
+        "severity": "error",
+        "pattern": [
+          {
+            "regexp": "(.+)",
+            "message": 1
+          },
+          {
+            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          }
+        ]
+      }
+      ]
     },
-    "osx": {
-        "options": {
-            "shell": {
-                "executable": "/usr/local/bin/pwsh",
-                "args": [
-                    "-NoProfile",
-                    "-Command"
-                ]
-            }
-        }
+    {
+      "label": "Add script",
+      "type": "shell",
+      "command": "Invoke-Plaster -TemplatePath ${workspaceFolder}\\..\\plaster.template.pw\\AddPWScript -DestinationPath ${input:Folder}",
+      "problemMatcher": [
+      {
+        "owner": "powershell",
+        "fileLocation": [
+          "absolute"
+        ],
+        "severity": "error",
+        "pattern": [
+          {
+            "regexp": "(.+)",
+            "message": 1
+          },
+          {
+            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          }
+        ]
+      }
+      ]
     },
-    "tasks": [
-        {
-            "label": "Test",
-            "type": "shell",
-            "command": "Invoke-Pester -PesterOption @{IncludeVSCodeMarker=$true}",
-            "group": {
-                "kind": "test",
-                "isDefault": true
-            },
-            "problemMatcher": [
-                "$pester"
-            ]
-        },
-        {
-            "label": "Publish",
-            "type": "shell",
-            "command": "Publish-Script -Path ${file} -Repository ${input:Repository}"
-        }
-    ],
-    "inputs": [
-        {
-            "id": "Repository",
-            "type": "pickString",
-            "description": "Name of the repository to publish",
-            "options": [
-                "PSGallery",
-                "LocalRepo",
-                "TeliaInt"
-            ],
-            "default": "LocalRepo"
-        }
-    ]
+    {
+      "label": "Add function",
+      "type": "shell",
+      "command": "Invoke-Plaster -TemplatePath ${workspaceFolder}\\..\\plaster.template.pw\\AddPWFunction -DestinationPath ${input:Folder}",
+      "problemMatcher": [
+      {
+        "owner": "powershell",
+        "fileLocation": [
+          "absolute"
+        ],
+        "severity": "error",
+        "pattern": [
+          {
+            "regexp": "(.+)",
+            "message": 1
+          },
+          {
+            "regexp": "At (.*\\.ps1):(\\d*) char:(\\d*)(.*)",
+            "file": 1,
+            "line": 2,
+            "column": 3
+          }
+        ]
+      }
+      ]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "Repository",
+      "type": "pickString",
+      "description": "Name of the repository to publish",
+      "options": [
+        "PSGallery",
+        "LocalRepo",
+        "TeliaInt"
+      ],
+      "default": "LocalRepo"
+    },
+    {
+      "id": "Folder",
+      "type": "promptString",
+      "description": "Folder where to create new file.",
+      "default": "${workspaceFolder}\\src"
+    }
+  ]
 }
