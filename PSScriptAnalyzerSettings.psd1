@@ -72,7 +72,7 @@
                 'desktop-3.0-windows'
                 #'desktop-4.0-windows'
                 'desktop-5.1.14393.206-windows'
-                #'core-6.1.0-windows'
+                'core-6.1.0-windows'
             )
         }
 
@@ -84,6 +84,7 @@
         # https://github.com/PowerShell/PSScriptAnalyzer/blob/master/RuleDocumentation/UseConsistentWhitespace.md
         PSUseConsistentWhitespace = @{
             Enable = $true
+            CheckOperator = $false
         }
 
         UseCompatibleCommmands = @{
@@ -102,7 +103,7 @@
                 "6.0"
                 "5.1"
                 "3.0"
-                "2.0"
+                #"2.0"
             )
             # You can specify commands to not check like this, which also will ignore its parameters:
             <# IgnoreCommands = @(
