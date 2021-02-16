@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.5.2
+    .VERSION 1.6.0
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
@@ -23,19 +23,19 @@
         Sends e-mail notification to users whose password is about to expire.
 
     .DESCRIPTION
-		Script is meant to send e-mail notifications about expiring passwords.
-		The notification is sent only to users who:
-			1. are enabled
-			2. can change their password
-			3. has an e-mail address
-			4. has been logged on at least once
-			5. their password expires in time
-			6. password is not yet expired
+        Script is meant to send e-mail notifications about expiring passwords.
+        The notification is sent only to users who:
+            1. are enabled
+            2. can change their password
+            3. has an e-mail address
+            4. has been logged on at least once
+            5. their password expires in time
+            6. password is not yet expired
 
-		The script uses config file, that contains information nessesary to send e-mail.
+        The script uses config file, that contains information nessesary to send e-mail.
 
-		Script requires ActiveDirectory module on the computer where script runs.  Script also
-		requires AD WS (or AD GMS) service on any domain controller.
+        Script requires ActiveDirectory module on the computer where script runs.  Script also
+        requires AD WS (or AD GMS) service on any domain controller.
 
     .PARAMETER WhatIf
         Shows what would happen if the script runs.
@@ -66,23 +66,25 @@
         <?xml version="1.0" encoding="utf-8" ?>
         <config>
             <ou></ou> <!-- Search base OU, if needed -->
-        	<user>
-        		<!-- If the next element exist, the script refers to user as domain\samAccountName -->
-        		<!-- Otherwise, the script refers to user as userPrincipalName -->
-        <!--
-        		<useSamAccountName />
-        -->
-        	</user>
-        	<server>mail.server</server>
-        	<mail>
-        		<from>PasswordNotifier@localhost</from>
-        		<subject>Your password will expire soon </subject>
-        		<body>Dear User,
+            <user>
+                <!-- If the next element exist, the script refers to user as domain\samAccountName -->
+                <!-- Otherwise, the script refers to user as userPrincipalName -->
+                <!-- <useSamAccountName /> -->
+
+                <!-- If the next element exist, the script takes e-mail from  user's manager account, when available -->
+                <!-- Otherwise, the user own mail attribute is used -->
+                <!-- <useManagerMail /> -->
+            </user>
+            <server>mail.server</server>
+            <mail>
+                <from>PasswordNotifier@localhost</from>
+                <subject>Your password will expire soon </subject>
+                <body>Dear User,
 
         Password of Your user account ({0}) expires in {1} days.
         Please change Your password ASAP.
-        		</body>
-        	</mail>
+                </body>
+            </mail>
         </config>
 
     .LINK
@@ -105,7 +107,7 @@ param (
             ParameterSetName = 'Action'
         )]
         [int[]]
-        # Number of days before password expiration, when to send warning.  Can contain	more than one number.
+        # Number of days before password expiration, when to send warning.  Can contain more than one number.
     $DaysBefore,
         [parameter(
             ParameterSetName = 'Action'
@@ -130,7 +132,7 @@ param (
 )
 
     # Script version
-Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.5.2' -WhatIf:$false -Confirm:$false
+Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.6.0' -WhatIf:$false -Confirm:$false
 
 if ($PSCmdlet.ParameterSetName -like 'Version') {
     "Version $Ver"
@@ -159,18 +161,19 @@ $mailSettings = @{
 
     # get users
 $searchProperties = @{
-    Filter = 'Enabled -eq $true -and PasswordNeverExpires -eq $false -and PasswordExpired -eq $false -and logonCount -ge 1 -and mail -like "*"'
-    Properties = 'PasswordLastSet', 'mail'
+    Filter     = 'Enabled -eq $true -and PasswordNeverExpires -eq $false -and PasswordExpired -eq $false -and logonCount -ge 1 -and mail -like "*"'
+    Properties = 'PasswordLastSet', 'mail', 'manager'
 }
 if ($conf.config.ou) {
     $searchProperties.SearchBase = $conf.config.ou
     #$searchProperties.SearchScope = 'Subtree'
 }
 Get-ADUser @searchProperties |
-    Where-Object {-not $_.CannotChangePassword} |
+    Where-Object { -not $_.CannotChangePassword } |
     ForEach-Object {
         $PasswordAge = $MaxPasswordAge
-        if ($AdDomain.DomainMode -ge 3) {   # [Microsoft.ActiveDirectory.Management.ADDomainMode]::Windows2008Domain
+        if ($AdDomain.DomainMode -ge 3) {
+                # [Microsoft.ActiveDirectory.Management.ADDomainMode]::Windows2008Domain
             $accountFGPP = Get-ADUserResultantPasswordPolicy -Identity $_
             if ($accountFGPP) {
                 $PasswordAge = $accountFGPP.MaxPasswordAge
@@ -181,12 +184,22 @@ Get-ADUser @searchProperties |
         $PasswordDays = ($_.PasswordLastSet.Add($PasswordAge) - [datetime]::Now).days
         Write-Debug -Message "pwdDays = $PasswordDays"
 
-        if ($conf.config.user.item('useSamAccountName')) {
-            $userName = '{0}\{1}' -f $AdDomain.NetBIOSName, $_.SamAccountName
+        $userName = if ($conf.config.user.item('useSamAccountName')) {
+            '{0}\{1}' -f $AdDomain.NetBIOSName, $_.SamAccountName
         } else {
-            $userName = $_.UserPrincipalName
+            $_.UserPrincipalName
         }
-        $userMail = $_.mail
+
+        $userMail = if ($conf.config.user.item('useManagerMail')) {
+                # use manager's e-mail instead of user's, if available
+            $managerMail = (Get-ADUser -Identity $_.manager -Properties mail).mail
+            if ($managerMail) {
+                $managerMail
+            } else { $_.mail }
+        } else {
+            $_.mail
+        }
+
         if ($PasswordDays -ge 1) {
             foreach ($day in $DaysBefore) {
                 Write-Debug -Message "Processing day $day, user $userName"
