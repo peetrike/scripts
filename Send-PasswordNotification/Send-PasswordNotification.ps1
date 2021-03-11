@@ -132,7 +132,7 @@ param (
 )
 
     # Script version
-Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.6.0' -WhatIf:$false -Confirm:$false
+Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.6.2' -WhatIf:$false -Confirm:$false
 
 if ($PSCmdlet.ParameterSetName -like 'Version') {
     "Version $Ver"
