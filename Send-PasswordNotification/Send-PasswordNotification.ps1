@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.6.1
+    .VERSION 1.6.2
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
@@ -139,17 +139,10 @@ if ($PSCmdlet.ParameterSetName -like 'Version') {
     exit 3
 }
 
-
 Write-Verbose -Message "Loading Config file: $ConfigFile"
 $conf = [xml](Get-Content -Path $ConfigFile)
 
-    # get Max Password age from Domain Policy
-$MaxPasswordAge = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge
-Write-Debug -Message ('Max Password Age: {0}' -f $MaxPasswordAge)
-
-    # Get Domain functional level.
 $AdDomain = Get-ADDomain
-
 $mailSettings = @{
     Subject    = $conf.config.mail.subject
     From       = $conf.config.mail.from
@@ -160,9 +153,20 @@ $mailSettings = @{
 }
 
     # get users
+$AndPart = ' -and '
 $searchProperties = @{
-    Filter     = 'Enabled -eq $true -and PasswordNeverExpires -eq $false -and logonCount -ge 1 -and mail -like "*"'
-    Properties = 'CannotChangePassword', 'mail', 'manager', 'PasswordExpired', 'PasswordLastSet'
+    Filter     = 'Enabled -eq $true' + $AndPart +
+                 'PasswordNeverExpires -eq $false' + $AndPart +
+                 'logonCount -ge 1' + $AndPart +
+                 'mail -like "*"'
+    Properties = @(
+        'CannotChangePassword'
+        'mail'
+        'manager'
+        'msDS-UserPasswordExpiryTimeComputed'
+        'PasswordExpired'
+        'PasswordLastSet'
+    )
 }
 if ($conf.config.ou) {
     $searchProperties.SearchBase = $conf.config.ou
@@ -171,17 +175,8 @@ if ($conf.config.ou) {
 Get-ADUser @searchProperties |
     Where-Object { -not ($_.CannotChangePassword -or $_.PasswordExpired) } |
     ForEach-Object {
-        $PasswordAge = $MaxPasswordAge
-        if ($AdDomain.DomainMode -ge 3) {
-                # [Microsoft.ActiveDirectory.Management.ADDomainMode]::Windows2008Domain
-            $accountFGPP = Get-ADUserResultantPasswordPolicy -Identity $_
-            if ($accountFGPP) {
-                $PasswordAge = $accountFGPP.MaxPasswordAge
-            }
-        }
-        Write-Debug -Message "pwdAge = $PasswordAge"
-
-        $PasswordDays = ($_.PasswordLastSet.Add($PasswordAge) - [datetime]::Now).days
+        $PasswordExpireDate = [datetime]::FromFileTime($_.'msDS-UserPasswordExpiryTimeComputed')
+        $PasswordDays = (New-TimeSpan -End $PasswordExpireDate).days
         Write-Debug -Message "pwdDays = $PasswordDays"
 
         $userName = if ($conf.config.user.item('useSamAccountName')) {
