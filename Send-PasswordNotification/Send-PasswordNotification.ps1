@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.6.2
+    .VERSION 1.6.3
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
@@ -132,10 +132,8 @@ param (
 )
 
     # Script version
-Set-Variable -Name Ver -Option Constant -Scope Script -Value '1.6.2' -WhatIf:$false -Confirm:$false
-
 if ($PSCmdlet.ParameterSetName -like 'Version') {
-    "Version $Ver"
+    'Version {0}' -f (Test-ScriptFileInfo -Path $PSCommandPath).Version
     exit 3
 }
 
