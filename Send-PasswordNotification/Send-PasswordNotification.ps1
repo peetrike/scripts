@@ -6,8 +6,8 @@
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
-    .COPYRIGHT (c) 2019 Peter Wawa.  All rights reserved.
-    .TAGS password, password, e-mail, email, notification, Windows, PSEdition_Desktop, PSEdition_Core
+    .COPYRIGHT (c) 2021 Peter Wawa.  All rights reserved.
+    .TAGS password, e-mail, email, notification, Windows, PSEdition_Desktop, PSEdition_Core
     .LICENSEURI https://github.com/peetrike/scripts/blob/master/LICENSE
     .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
@@ -94,7 +94,7 @@
         Send-MailMessage
 #>
 
-[cmdletbinding(
+[CmdletBinding(
     SupportsShouldProcess = $True,
     DefaultParameterSetName = 'Action'
 )]
