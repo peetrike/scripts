@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.6.0
+    .VERSION 1.6.1
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
@@ -161,15 +161,15 @@ $mailSettings = @{
 
     # get users
 $searchProperties = @{
-    Filter     = 'Enabled -eq $true -and PasswordNeverExpires -eq $false -and PasswordExpired -eq $false -and logonCount -ge 1 -and mail -like "*"'
-    Properties = 'PasswordLastSet', 'mail', 'manager'
+    Filter     = 'Enabled -eq $true -and PasswordNeverExpires -eq $false -and logonCount -ge 1 -and mail -like "*"'
+    Properties = 'CannotChangePassword', 'mail', 'manager', 'PasswordExpired', 'PasswordLastSet'
 }
 if ($conf.config.ou) {
     $searchProperties.SearchBase = $conf.config.ou
     #$searchProperties.SearchScope = 'Subtree'
 }
 Get-ADUser @searchProperties |
-    Where-Object { -not $_.CannotChangePassword } |
+    Where-Object { -not ($_.CannotChangePassword -or $_.PasswordExpired) } |
     ForEach-Object {
         $PasswordAge = $MaxPasswordAge
         if ($AdDomain.DomainMode -ge 3) {
