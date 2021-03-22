@@ -86,3 +86,12 @@ Send-PasswordNotification.ps1 13 -ConfigFile my.config
 This example sends password notification e-mails to users whose password will
 expire in 13 days.  The configuration file name is explicitly provided on
 command line.
+
+### Running script without sending out e-mails
+
+```powershell
+Send-PasswordNotification.ps1 -DaysBefore 14 -WhatIf
+```
+
+This example shows users whose password will expire in 14 days.  No e-mails are
+sent out.
