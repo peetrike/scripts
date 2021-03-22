@@ -4,17 +4,23 @@
 <#PSScriptInfo
     .VERSION 1.6.3
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
+
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
     .COPYRIGHT (c) 2021 Peter Wawa.  All rights reserved.
+
     .TAGS password, e-mail, email, notification, Windows, PSEdition_Desktop, PSEdition_Core
+
     .LICENSEURI https://github.com/peetrike/scripts/blob/master/LICENSE
     .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
+
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
+
     .RELEASENOTES https://github.com/peetrike/scripts/blob/master/Send-PasswordNotification/CHANGELOG.md
+
     .PRIVATEDATA
 #>
 
@@ -32,7 +38,7 @@
             5. their password expires in time
             6. password is not yet expired
 
-        The script uses config file, that contains information nessesary to send e-mail.
+        The script uses config file, that contains information necessary to send e-mail.
 
         Script requires ActiveDirectory module on the computer where script runs.  Script also
         requires AD WS (or AD GMS) service on any domain controller.
@@ -45,12 +51,12 @@
         Prompts you for confirmation before sending out e-mail messages
 
     .EXAMPLE
-        PS C:\> Send-PasswordNotification.ps1 -DaysBefore 5,1
+        Send-PasswordNotification.ps1 -DaysBefore 5,1
 
         Sends e-mail to users, whose password expires within 5 or 1 days.
 
     .EXAMPLE
-        PS C:\> Send-PasswordNotification.ps1 7 -configFile my.config
+        Send-PasswordNotification.ps1 7 -ConfigFile my.config
 
         Sends notification 7 days before password expires.  Uses custom configuration file.
 
