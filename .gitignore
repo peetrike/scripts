@@ -2,4 +2,4 @@
 *.csv
 
 # local folders
-test/*
+local/*
