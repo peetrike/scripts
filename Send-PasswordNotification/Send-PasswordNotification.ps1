@@ -139,7 +139,14 @@ param (
 
     # Script version
 if ($PSCmdlet.ParameterSetName -like 'Version') {
-    'Version {0}' -f (Test-ScriptFileInfo -Path $PSCommandPath).Version
+    try {
+        $null = Get-Command Test-ScriptFileInfo -ErrorAction Stop
+        $ver = (Test-ScriptFileInfo -Path $PSCommandPath).Version
+    } catch {
+        $result = Select-String -Path .\katse.ps1 -Pattern '^\s*\.VERSION (\d(\.\d){0,3})$'
+        $ver = $result.Matches.Groups[1].value
+    }
+    'Version {0}' -f $ver
     exit 3
 }
 
