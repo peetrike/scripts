@@ -176,7 +176,6 @@ $searchProperties = @{
         'manager'
         'msDS-UserPasswordExpiryTimeComputed'
         'PasswordExpired'
-        'PasswordLastSet'
     )
 }
 if ($conf.config.ou) {
