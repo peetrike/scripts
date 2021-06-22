@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.6.4
+    .VERSION 1.6.5
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
     .AUTHOR Peter Wawa
@@ -109,7 +109,7 @@ param (
             Position = 0,
             Mandatory = $true,
             HelpMessage = 'Specify number of days before password expiration',
-            ValueFromPipeLine = $true,
+            #ValueFromPipeLine = $true,
             ParameterSetName = 'Action'
         )]
         [int[]]
@@ -118,8 +118,8 @@ param (
         [parameter(
             ParameterSetName = 'Action'
         )]
-        [ValidateScript({
-            if (test-path -Path $_) {$true}
+        [ValidateScript( {
+            if (test-path -Path $_) { $true }
             else {
                 throw 'Config file not found'
             }
@@ -143,7 +143,7 @@ if ($PSCmdlet.ParameterSetName -like 'Version') {
         $null = Get-Command Test-ScriptFileInfo -ErrorAction Stop
         $ver = (Test-ScriptFileInfo -Path $PSCommandPath).Version
     } catch {
-        $result = Select-String -Path .\katse.ps1 -Pattern '^\s*\.VERSION (\d(\.\d){0,3})$'
+        $result = Select-String -Path $PSCommandPath -Pattern '^\s*\.VERSION (\d(\.\d){0,3})$'
         $ver = $result.Matches.Groups[1].value
     }
     'Version {0}' -f $ver
