@@ -2,18 +2,18 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.1.3
+    .VERSION 1.1.4
 
     .GUID ac2008ad-6645-45d4-84da-300e6ffdfe5e
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2019.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
     .TAGS ActiveDirectory, AD, group, report
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
@@ -21,16 +21,18 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.4] - 2021.12.31
+            - Move script to Github
+            - fix pipeline input support
         [1.1.3] - 2019.11.01 - Fixed SearchBase and SearchScope
         [1.1.2] - 2019.10.17 - Renamed script
         [1.1.1] - 2019.10.03 - Changed:
-            * added e-mail to MemberOf report
-            * made Members report generation faster
+            - added e-mail to MemberOf report
+            - made Members report generation faster
         [1.1.0] - 2019.10.03 - added -DirectMembers parameter
         [1.0.0] - 2019.07.02 - initial release
 
     .PRIVATEDATA
-
 #>
 
 <#
@@ -119,81 +121,89 @@ param (
     $OutputType = 'Single'
 )
 
-$groupProps = @{
-    Filter = $Filter
-}
-
-if ($SearchBase) {
-    $groupProps.SearchBase = $SearchBase
-    $CsvName = (Get-ADOrganizationalUnit $SearchBase).Name
-} else {
-    $CsvName = (Get-ADDomain).DnsRoot
-}
-
-if ($SearchScope) {
-    $groupProps.SearchScope = $SearchScope
-}
-
-$CsvProps = @{
-    UseCulture = $true
-    Encoding = 'Default'
-    NoTypeInformation = $true
-}
-
-$Membership = if ($MemberOf.IsPresent) {
-    'memberof'
-} else {
-    'members'
-}
-
-$CsvProps.Path = Join-Path -Path $PWD -ChildPath ('{0}_{1}.csv' -f $CsvName, $Membership)
-if ($OutputType -like 'Single') {
-    if (Test-Path -Path $CsvProps.Path -PathType Leaf ) {
-        Remove-Item -Path $CsvProps.Path
-    }
-}
-
-$GroupList = Get-ADGroup @groupProps
-
-$Surname = @{
-    Name = 'Surname'
-    Expression = { $_.sn }
-}
-$GroupName = @{
-    Name = 'GroupName'
-    Expression = { $Group.Name }
-}
-
-foreach ($Group in $GroupList) {
-    Write-Verbose -Message ('Processing group: {0}' -f $Group.Name)
-
-    $MemberProps = @{
-        Identity = $Group.objectGUID
+begin {
+    #region Group seach properties
+    $groupProps = @{
+        Filter = $Filter
     }
 
-    $list = if ($MemberOf.IsPresent) {
-        Get-ADPrincipalGroupMembership @MemberProps |
-            Get-ADGroup -Properties mail |
-            Select-Object -Property Name, SamAccountName, mail, Group*
+    if ($SearchScope) {
+        $groupProps.SearchScope = $SearchScope
+    }
+    #endregion
+
+    $Membership = if ($MemberOf.IsPresent) {
+        'memberof'
     } else {
-        if (-not $DirectMembers.IsPresent) {
-            $MemberProps.Recursive = $true
-        }
-        Get-ADGroupMember @MemberProps |
-            Get-ADObject -Properties GivenName, sn, SamAccountName, UserPrincipalName, mail |
-            Select-Object -Property Name, GivenName, $Surname, SamAccountName, UserPrincipalName, mail
+        'members'
     }
 
-    switch ($OutputType) {
-        'Single' {
-            $list |
-                Select-Object -Property $GroupName, * |
-                Export-Csv @CsvProps -Append
+    $CsvProps = @{
+        Path              = Join-Path -Path $PWD -ChildPath ('{0}_{1}.csv' -f (Get-ADDomain).DnsRoot, $Membership)
+        Encoding          = 'UTF8'
+        UseCulture        = $true
+        NoTypeInformation = $true
+    }
+    if ($PSVersionTable.PSVersion.Major -gt 5) {
+        $CsvProps.Encoding = 'utf8BOM'
+    }
+
+    $Surname = @{
+        Name       = 'Surname'
+        Expression = { $_.sn }
+    }
+    $GroupName = @{
+        Name       = 'GroupName'
+        Expression = { $Group.Name }
+    }
+}
+
+process {
+    if ($SearchBase) {
+        $groupProps.SearchBase = $SearchBase
+        $CsvName = '{0}_{1}.csv' -f (Get-ADOrganizationalUnit $SearchBase).Name, $Membership
+        $CsvProps.Path = Join-Path -Path $PWD -ChildPath $CsvName
+    }
+
+    if ($OutputType -like 'Single') {
+        if (Test-Path -Path $CsvProps.Path -PathType Leaf ) {
+            Remove-Item -Path $CsvProps.Path
         }
-        'Multiple' {
-            $CsvName = '{0}_{1}.csv' -f ($Group.Name.Split([io.path]::GetInvalidFileNameChars()) -join '_'), $Membership
-            $CsvProps.Path = Join-Path -Path $PWD -ChildPath $CsvName
-            $list | Export-Csv @CsvProps
+    }
+
+    $GroupList = Get-ADGroup @groupProps
+
+    foreach ($Group in $GroupList) {
+        Write-Verbose -Message ('Processing group: {0}' -f $Group.Name)
+
+        $MemberProps = @{
+            Identity = $Group.objectGUID
+        }
+
+        $list = if ($MemberOf.IsPresent) {
+            Get-ADPrincipalGroupMembership @MemberProps |
+                Get-ADGroup -Properties mail |
+                Select-Object -Property Name, SamAccountName, mail, Group*
+        } else {
+            if (-not $DirectMembers.IsPresent) {
+                $MemberProps.Recursive = $true
+            }
+            Get-ADGroupMember @MemberProps |
+                Get-ADObject -Properties GivenName, sn, SamAccountName, UserPrincipalName, mail |
+                Select-Object -Property Name, GivenName, $Surname, SamAccountName, UserPrincipalName, mail
+        }
+
+        switch ($OutputType) {
+            'Single' {
+                $list |
+                    Select-Object -Property $GroupName, * |
+                    Export-Csv @CsvProps -Append
+            }
+            'Multiple' {
+                $CsvName = '{0}_{1}.csv' -f ($Group.Name.Split([io.path]::GetInvalidFileNameChars()) -join '_'), $Membership
+                $CsvProps.Path = Join-Path -Path $PWD -ChildPath $CsvName
+                $list | Export-Csv @CsvProps
+            }
         }
     }
 }
