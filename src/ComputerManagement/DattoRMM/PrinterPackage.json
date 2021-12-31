@@ -1,0 +1,22 @@
+{
+  "Drivers": [
+    {
+      "Name": "HP Color LaserJet Pro M452 PCL 6",
+      "Uri": "http://miracle.mlxplus.com/Software/Printer/HP_CLPro_M452.zip",
+      "x64": true,
+      "Connection": "10.59.1.149"
+    },
+    {
+      "Name": "HP Color LaserJet Pro M452 PCL 6",
+      "Uri": "http://miracle.mlxplus.com/Software/Printer/HP_CLPro_M452.zip",
+      "x64": false,
+      "Connection": "10.59.1.149"
+    },
+    {
+      "Name": "HP Color LaserJet Pro M452 PCL 6",
+      "Uri": "HP_CLPro_M452.zip",
+      "x64": true,
+      "Connection": "10.59.1.149"
+    }
+  ]
+}

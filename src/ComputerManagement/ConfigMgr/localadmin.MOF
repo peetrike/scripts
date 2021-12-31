@@ -1,0 +1,12 @@
+[ SMS_Report (TRUE),
+  SMS_Group_Name ("LocalAdmin"),
+  SMS_Class_ID ("TELIA|LocalAdmin|1.0"),
+  Namespace ("root\\\\Telia") ]
+class LocalAdmin : SMS_Class_Template
+{
+    [SMS_Report (TRUE), key ] string Name;
+    [SMS_Report (TRUE), key ] string Domain;
+    [SMS_Report (TRUE)      ] string Caption;
+    [SMS_Report (TRUE)      ] string LocalAccount;
+    [SMS_Report (TRUE)      ] string Type;
+};
