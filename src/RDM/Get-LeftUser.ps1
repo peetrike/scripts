@@ -3,7 +3,7 @@
 [CmdletBinding()]
 param (
         [string[]]
-    $DataSource = @('Helpdesk', 'KLH serverid', 'SiseIT Serverid')
+    $DataSource = (Get-RDMDataSource).Name
 )
 
 foreach ($Source in $DataSource) {

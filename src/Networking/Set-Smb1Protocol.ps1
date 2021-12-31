@@ -2,7 +2,7 @@
 
 <#
     .LINK
-        https://docs.microsoft.com/en-us/windows-server/storage/file-server/troubleshoot/detect-enable-and-disable-smbv1-v2-v3
+        https://docs.microsoft.com/windows-server/storage/file-server/troubleshoot/detect-enable-and-disable-smbv1-v2-v3
 #>
 
 [CmdletBinding()]
@@ -17,7 +17,6 @@ param (
 
 Function Test-IsAdmin {
     [CmdletBinding()]
-    [OutputType([Boolean])]
     param()
 
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()

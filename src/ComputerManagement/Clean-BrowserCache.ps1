@@ -2,7 +2,7 @@
 #Requires -Modules UserProfile
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.0.2
     .GUID b6a150a7-ca36-460f-aca2-7592fc728f58
 
     .AUTHOR CPG4285
@@ -12,14 +12,15 @@
     .TAGS user, profile, browser, cache, cleanup
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
-    .EXTERNALMODULEDEPENDENCIES
+    .EXTERNALMODULEDEPENDENCIES UserProfile
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.2] - 2021.12.31 - Moved script to Github
         [0.0.1] - 2021-09-08 - Initial release
 
     .PRIVATEDATA

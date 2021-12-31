@@ -2,8 +2,8 @@
 #Requires -Modules Indented.Net.Dns
 
 <#PSScriptInfo
-
     .VERSION 1.1.0
+
     .GUID 7216e2a5-936c-4936-9478-bcad3286bd35
 
     .AUTHOR cpg4285
@@ -13,7 +13,7 @@
     .TAGS dns, office365, PSEditon_Core, PSEditon_Desktop, Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES

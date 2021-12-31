@@ -9,14 +9,12 @@ work around the admin requirements.
 
 ## Obtaining script(s)
 
-The scripts are available on [Telia Internal PowerShell Repository](https://itwiki.atlassian.teliacompany.net/display/MSC/Powershelli+koodihoidla):
+You need both scripts:
 
-```powershell
-Save-Script Connect-ShadowSession -Repository TeliaInt -Path c:\temp
-```
+- [Add-ShadowPermission.ps1](Add-ShadowPermission.ps1)
+- [Connect-ShadowSession.ps1](Connect-ShadowSession.ps1)
 
-Both scripts are downloaded using command above.  After saving scripts on local
-workstation, these can be copied to customer Remote Desktop farm.
+Copy these scripts to customer Remote Desktop farm.
 
 ## Preparation
 
@@ -52,7 +50,7 @@ is on network share, the PowerShell must be configured to use *Unrestricted*
 execution policy for running that script.  The shortcut in desktop or Start Menu
 should be enough.
 
-When script is runned without command-line parameters (shortcut), then user gets
+When script is started without command-line parameters (shortcut), then user gets
 list of all existing sessions in the farm.  Only one must be selected to
 establish shadow session.
 

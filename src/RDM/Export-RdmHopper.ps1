@@ -11,7 +11,7 @@
 
     .TAGS rdm, network, hopper
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES RemoteDesktopManager
@@ -19,9 +19,9 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.0.0] - 2019.11.22 - Initial release
-        [1.0.1] - 2019.11.22 - Update RDM module requirement
         [1.0.2] - 2021.11.19 - Use UTF-8 with BOM encoding when exporting .CSV file
+        [1.0.1] - 2019.11.22 - Update RDM module requirement
+        [1.0.0] - 2019.11.22 - Initial release
 
     .PRIVATEDATA
 #>

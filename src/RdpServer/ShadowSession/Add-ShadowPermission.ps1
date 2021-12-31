@@ -12,7 +12,7 @@
     .TAGS rdp shadow PSEdition_Desktop Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES CimCmdlets
@@ -20,8 +20,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.0.0] - 2020.09.02 - Initial release
         [1.0.1] - 2020.09.02 - fix problem with invoke-cimmethod
+        [1.0.0] - 2020.09.02 - Initial release
 
     .PRIVATEDATA
 #>

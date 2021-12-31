@@ -1,7 +1,7 @@
 #Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.0
+    .VERSION 1.0.1
     .GUID 0391ff58-893b-4d0b-949b-3a1e32fdfa75
 
     .AUTHOR Meelis Nigols
@@ -11,7 +11,7 @@
     .TAGS environment, variable, PSEditon_Desktop, PSEdition_Core, Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.1] - 2021.12.31 - Moved script to Github
         [1.0.0] - 2021.01.08 - remove redundant verbose message
         [0.0.3] - 2021.01.08 - fix problem when variable contains only 1 path
         [0.0.2] - 2021.01.07 - Refactor script
@@ -32,29 +33,24 @@
 <#
     .SYNOPSIS
         Change environment variable that contains list of paths
-
     .DESCRIPTION
         This script changes environment variable content, that has value like
         Path environment variable.
 
         The specific path can be added or removed.  When adding, the new path
         can be added before or after existing list of paths.
-
     .EXAMPLE
         Set-PathVar -Value 'c:\path' -Target Machine
 
         This example adds new path 'c:\path' after existing variable Path value.
         The variable value is taken from Machine target.
-
     .EXAMPLE
         Set-PathVar -Variable PSModulePath -Value 'c:\path' -Operation Remove
 
         This example removes path 'c:\path' from variable PSModulePath.
-
     .NOTES
         Setting variable with Target Machine requires admin privileges.
         If added path already exists, then it will be moved to beginning or end of path list.
-
     .LINK
         https://docs.microsoft.com/dotnet/api/system.environment.setenvironmentvariable
 #>

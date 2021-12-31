@@ -2,7 +2,7 @@
 #Requires -Modules AzureAdPreview
 
 <#PSScriptInfo
-    .VERSION 1.0.1
+    .VERSION 1.0.2
 
     .GUID 6894168a-33aa-430b-b7c9-66cd749c51ab
 
@@ -13,7 +13,7 @@
     .TAGS Azure, ActiveDirectory, AD, user, logon, report
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES AzureAdPreview
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.2] - 2021.12.31 - move script to Github
         [1.0.1] - 2021.03.25 - Add verbose message to report generation
         [1.0.0] - 2021.01.21 - Initial Release
 

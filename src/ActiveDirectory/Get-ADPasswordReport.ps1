@@ -2,18 +2,18 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.4
+    .VERSION 1.0.5
 
     .GUID 0c74c504-8341-4a2c-b89b-8993b6bac6f5
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2020.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
     .TAGS ActiveDirectory, AD, user, password, report
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.5] - 2021.12.31 - Moved script to Github.
         [1.0.4] - 2020.11.24 - Renamed ExpiryDate column to PasswordExpiryDate
         [1.0.3] - 2020.11.24 - Added CannotChangePassword, LastLogonDate to report
         [1.0.2] - 2020.05.21 - Don't return ExpiryDate, if password hasn't set or password never expires.
@@ -35,28 +36,26 @@
         Compiles Password expiration report
     .DESCRIPTION
         This script generates password expiration report for AD users.
-        The result is saved as .csv file.  The report file name is current AD domain name or OU name,
-        if -SearchBase parameter was used.
+        The result is saved as .csv file.  The report file name is current AD domain name or OU name
+        when -SearchBase parameter was used.
 
     .EXAMPLE
-        PS C:\> Get-ADPasswordReport -Filter {Name -like 'one*'} -SearchBase 'OU=Employees,DC=example,DC=com'
+        Get-ADPasswordReport -Filter {Name -like 'one*'} -SearchBase 'OU=Employees,DC=example,DC=com'
 
         This command finds all users that have name starting with 'one' in OU Employees and reports their password
         status.
-
     .EXAMPLE
-        PS C:\> Get-ADOrganizationalUnit -Identity 'OU=Employees,DC=example,DC=com' | Get-ADPasswordReport
+        Get-ADOrganizationalUnit -Identity 'OU=Employees,DC=example,DC=com' | Get-ADPasswordReport
 
         This command finds all users from OU Employees and reports their password status.
-
     .EXAMPLE
-        PS C:\> Get-ADPasswordReport -ReportPath c:\reports
+        Get-ADPasswordReport -ReportPath c:\reports
 
         This command finds all users from current AD domain and reports their password.  The report is saved in
         c:\reports folder.
 
     .LINK
-        Get-ADUser https://docs.microsoft.com/en-us/powershell/module/activedirectory/get-aduser
+        Get-ADUser https://docs.microsoft.com/powershell/module/activedirectory/get-aduser
 
 #>
 

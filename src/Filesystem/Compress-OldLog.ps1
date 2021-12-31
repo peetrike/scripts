@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.2.0
+    .VERSION 1.2.1
     .GUID 508c2641-1b33-4ea7-b6db-ef7eaffa6433
 
     .AUTHOR Meelis Nigols
@@ -11,7 +11,7 @@
     .TAGS compress, log
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES Microsoft.Powershell.Archive
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.2.1] - 2021.12.31 - Moved script to Github
         [1.2.0] - 2020-05-04 - Now, -Months filters out files from beginning of month, not from current day in month
         [1.1.6] - 2018-12-28 - fixed problem with Compress-Archive: archive file was deleted if no files found to compress
         [1.1.5] - 2018-12-28 - changed 7-zip discovery and comment-based help
@@ -37,35 +38,31 @@
 <#
     .SYNOPSIS
         Compress old log files
-
     .DESCRIPTION
         This script will compress all files that are older than specified number of days (or months) to archive file.
-
     .EXAMPLE
-        PS C:\> Compress-OldLog.ps1 -Days 30
+        Compress-OldLog.ps1 -Days 30
+
         This command compresses all files older than 30 days in current directory.
-
     .EXAMPLE
-        PS C:\> Compress-OldLog.ps1 -Path c:\logs -Filter *.log
+        Compress-OldLog.ps1 -Path c:\logs -Filter *.log
+
         This command compresses log files (*.log) from path c:\logs.
-
     .EXAMPLE
-        PS C:\> Get-ChildItem c:\logs | Compress-OldLog.ps1 -Months 3 -Filter *.log
-        This command compresses all *.log files older than 3 months in subfolders under path c:\logs.
+        Get-ChildItem c:\logs | Compress-OldLog.ps1 -Months 3 -Filter *.log
 
+        This command compresses all *.log files older than 3 months in subfolders under path c:\logs.
     .INPUTS
         Files to be compressed
-
     .OUTPUTS
         None
-
     .NOTES
         This command stops without processing files, if there is no archiver.  Supported archivers are:
             Powershell 5.0 or newer (Compress-Archive)
             7-Zip
-
     .LINK
-        Compress-Archive https://docs.microsoft.com/en-us/powershell/module/Microsoft.PowerShell.Archive/Compress-Archive
+        Compress-Archive https://docs.microsoft.com/powershell/module/Microsoft.PowerShell.Archive/Compress-Archive
+    .LINK
         7-Zip http://7-zip.org
 #>
 
@@ -136,7 +133,7 @@ begin {
     if ($PSCmdlet.ParameterSetName -eq 'Months') {
         $MonthsAgo = ([datetime]::Today).AddMonths(-$Months)
         $MonthsAgo = $MonthsAgo.AddDays(1-$MonthsAgo.Day)
-        $DateFilter = { $_.lastwritetime -le $MonthsAgo }
+        $DateFilter = { $_.LastWriteTime -le $MonthsAgo }
         $archiveFileName = '{0:yyyy-MM}.zip' -f $MonthsAgo.AddMonths(-1)
     } else {
         $DateFilter = { ($_ | New-TimeSpan).Days -ge $Days }

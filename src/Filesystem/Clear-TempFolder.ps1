@@ -1,19 +1,26 @@
 ﻿#Requires -Version 3.0
 
 <#PSScriptInfo
-    .VERSION 1.0.0
+    .VERSION 1.0.1
+
     .GUID c8542676-35df-4e9b-b8e9-b303af5ca4dc
+
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2018.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
+
     .TAGS
+
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
+
     .EXTERNALMODULEDEPENDENCIES
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
+
     .RELEASENOTES
+        [1.0.1] - 2021.12.31 - Moved script to Github
         [0.0.1] - 2019.07.22 - Started work
 
     .PRIVATEDATA
@@ -43,7 +50,7 @@ Param(
         # Specifies path to search for temp folder
     $Path,
         [switch]
-        # Specifies, that temp folders from envionment variables should be also processed
+        # Specifies, that temp folders from environment variables should be also processed
     $IncludeEnvironment
 )
 
@@ -67,7 +74,7 @@ function Clear-TempFolder {
             # Specifies path to search for temp folder
         $Path,
             [switch]
-            # Specifies, that temp folders from envionment variables should be also processed
+            # Specifies, that temp folders from environment variables should be also processed
         $IncludeEnvironment
     )
 
@@ -80,7 +87,7 @@ function Clear-TempFolder {
 
     process {
         foreach ($item in $path) {
-            if ($PSCmdlet.ShouldProcess($item, "Empty folder")) {
+            if ($PSCmdlet.ShouldProcess($item, 'Empty folder')) {
                 Get-ChildItem -Path $item -Recurse | Remove-Item -Recurse -Confirm:$false -WhatIf:$false
             }
         }

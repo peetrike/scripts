@@ -2,24 +2,25 @@
 #Requires -Modules msal.ps
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.0.2
     .GUID 4d52a386-e0c5-4177-9476-f0beefe604a1
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
-    .TAGS
+    .TAGS graph, api
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
-    .EXTERNALMODULEDEPENDENCIES
+    .EXTERNALMODULEDEPENDENCIES msal.ps
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.2] - 2021.12.31 - Moved script to Github.
 
     .PRIVATEDATA
 #>

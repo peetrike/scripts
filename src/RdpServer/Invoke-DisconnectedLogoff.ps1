@@ -1,24 +1,28 @@
 ﻿#Requires -Version 2.0
-# Requires -Modules telia.common
-# Requires -Modules RemoteDesktop
 
 <#PSScriptInfo
     .VERSION 1.0.1
+
     .GUID 5a6d1359-df01-4607-aead-111495452518
+
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2019.  All rights reserved.
+
     .TAGS logoff, rdp, session
+
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
+
     .EXTERNALMODULEDEPENDENCIES
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
+
     .RELEASENOTES
-        [0.0.1] - 2019.07.15 - Started work
-        [1.0.0] - 2019.07.16 - Initial release
         [1.0.1] - 2020.05.06 - Replace function Write-Log
+        [1.0.0] - 2019.07.16 - Initial release
+        [0.0.1] - 2019.07.15 - Started work
 
     .PRIVATEDATA
 #>
@@ -26,7 +30,6 @@
 <#
     .SYNOPSIS
         logs off all disconnected user sessions
-
     .DESCRIPTION
         This script logs off all RDP sessions that are currently disconnected.
         Logged off users are written into log file.
@@ -40,7 +43,6 @@ Param(
 )
 
 function Write-Log {
-    # copied from telia.common module
     [CmdletBinding(SupportsShouldProcess = $True)]
     Param(
             [Parameter(Position = 0, ValueFromPipeline = $true)]
@@ -105,10 +107,10 @@ function Get-RdpUserSession {
     $queryResults = query.exe user
     $Header =$queryResults[0]
     $starters = New-Object psobject -Property @{
-        SessionName = $Header.IndexOf("SESSIONNAME")
-        State       = $Header.IndexOf("STATE")
-        IdleTime    = $Header.IndexOf("IDLE TIME")
-        LogonTime   = $Header.IndexOf("LOGON TIME")
+        SessionName = $Header.IndexOf("SESSIONAL")
+        State       = $Header.IndexOf('STATE')
+        IdleTime    = $Header.IndexOf('IDLE TIME')
+        LogonTime   = $Header.IndexOf('LOGON TIME')
     }
     foreach ($result in $queryResults | Select-Object -Skip 1) {
         $SessionState = $result.Substring($starters.State, $starters.IdleTime - $starters.State).trim()
@@ -116,7 +118,7 @@ function Get-RdpUserSession {
             $SessionUserName = $result.Substring(1, $result.Trim().Indexof(" ")).TrimEnd()
             Write-Verbose -Message ('Processing user {0}' -f $SessionUserName)
 
-            $EndOfSessionName = $result.IndexOf(" ", $starters.SessionName)
+            $EndOfSessionName = $result.IndexOf(' ', $starters.SessionName)
             New-Object psobject -Property @{
                 SessionName = $result.Substring($starters.SessionName, $EndOfSessionName - $starters.SessionName)
                 Username    = $SessionUserName
@@ -135,10 +137,10 @@ if (-not $LogFilePath) {
     $LogFilePath = join-path -Path $DesktopPath -ChildPath $LogFileName
 }
 
-Write-Log -Message "Disconnected Sessions CleanUp"
-Write-Log -Message "============================="
+Write-Log -Message 'Disconnected Sessions CleanUp'
+Write-Log -Message '============================='
 foreach ($user in Get-RdpUserSession -State Disconnected ) {
     Write-Log -Message ('Logging off user: {0}' -f $user.Username)
     logoff.exe $user.ID
 }
-Write-Log -Message "Finished" -AddEmptyLine
+Write-Log -Message 'Finished' -AddEmptyLine

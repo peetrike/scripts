@@ -13,7 +13,7 @@
     .TAGS firewall, nbu, netbackup, backup
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/browse
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES NetSecurity
@@ -33,7 +33,6 @@
 
     .DESCRIPTION
         This script creates firewall rules required by NetBackup Agent
-
 #>
 
 [CmdletBinding(
@@ -42,7 +41,6 @@
 param ()
 
 Function Test-IsAdmin {
-    # .EXTERNALHELP PWAddins-help.xml
     [CmdletBinding()]
     [OutputType([Boolean])]
     param()

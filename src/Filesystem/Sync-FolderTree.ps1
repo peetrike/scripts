@@ -1,40 +1,44 @@
 ﻿#Requires -Version 3
 #Requires -Modules NTFSSecurity
-#Requires -RunAsAdministrator
+# Requires -RunAsAdministrator
 
 <#PSScriptInfo
-    .VERSION 1.1.5
+    .VERSION 1.1.6
+
     .GUID c38bc73d-e9d7-4775-a60f-779d5cc44ebd
+
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2019.  All rights reserved.
+
     .TAGS acl, sync, folder
+
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES NTFSSecurity
-
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [0.0.1] - 2019.07.11 Start of work
-        [1.0.0] - 2019.07.15 Initial release
-        [1.0.1] - 2019.07.15 Fixed setting owner
-        [1.1.0] - 2019.07.15 Added -AdminAccount parameter
-        [1.1.1] - 2019.07.16 Added existing permission check if -AdminAccount parameter is present
-        [1.1.2] - 2019.08.23 Fixed:
-                    * using -AdminAccount
-                    * using -CopyProfile
-                    * changed processing of long paths
-        [1.1.3] - 2019.08.23 Fixed non-existing command New-Item2
+        [1.1.6] - 2021.12.31 - Moved script to Github
+        [1.1.5] - 2019.10.29 Copy-Acl - added check for bypassing not resolved SIDs
         [1.1.4] - 2019.08.23 Changed:
                     * reduced PS Version requirement to 3.0
                     * refactored destination folder path calculation
                     * added double-check before disabling inheritance on terget path
                     * added retry on obtaining source folder ACL / Inheritance
-        [1.1.5] - 2019.10.29 Copy-Acl - added check for bypassing not resolved SIDs
+        [1.1.3] - 2019.08.23 Fixed non-existing command New-Item2
+        [1.1.2] - 2019.08.23 Fixed:
+                    * using -AdminAccount
+                    * using -CopyProfile
+                    * changed processing of long paths
+        [1.1.1] - 2019.07.16 Added existing permission check if -AdminAccount parameter is present
+        [1.1.0] - 2019.07.15 Added -AdminAccount parameter
+        [1.0.1] - 2019.07.15 Fixed setting owner
+        [1.0.0] - 2019.07.15 Initial release
+        [0.0.1] - 2019.07.11 Start of work
 
     .PRIVATEDATA
 #>
@@ -42,7 +46,6 @@
 <#
     .SYNOPSIS
         Synchronizes folder tree from remote file share to local disk
-
     .DESCRIPTION
         This script synchronizes folder tree from remote file share to local disk.
         Only folders and folder ACL-s are synchronized.
@@ -53,38 +56,31 @@
         If AdminAccount is specified, then that account will be added with
         Full Control permission to root folder and all folders,
         where inheritance is denined.
-
     .EXAMPLE
-        PS C:\> Sync-FolderTree -Path .\source -Destination d:\folder
+        Sync-FolderTree -Path .\source -Destination d:\folder
 
         This command copies folder tree from .\source to d:\folder
-
     .EXAMPLE
-        PS C:\> Sync-FolderTree -Path .\source -MigrationTable c:\mt.csv
+        Sync-FolderTree -Path .\source -MigrationTable c:\mt.csv
 
         This command copies folder tree from .\source to current directory,
         using migration table c:\mt.scv
-
     .EXAMPLE
-        PS C:\> Sync-FolderTree -Path .\source -CopyOwner
+        Sync-FolderTree -Path .\source -CopyOwner
 
         This command copies folder tree from .\source to current directory
         and adjusts the owner of new folders the same as source folders
-
     .EXAMPLE
-        PS C:\> Sync-FolderTree -Path .\source -AdminAccount Domain\FileServerAdmin
+        Sync-FolderTree -Path .\source -AdminAccount Domain\FileServerAdmin
 
         This command copies folder tree from .\source to current directory
         and adds Full Control permissions to Domain\FileServerAdmin account.
-
     .INPUTS
         String or System.IO.DirectoryInfo
 
         Folders that have to be synchronized
-
     .OUTPUTS
         None
-
     .NOTES
         The migration table is CSV file that should contain at least following columns:
             - SourceSid
@@ -94,9 +90,9 @@
         if found in migration table.
 
         If source root folder has only inherited ACEs, then no permissions will be copied.
-
     .LINK
         NTFSSecurity module: https://github.com/raandree/NTFSSecurity
+    .LINK
         Get-ChildItem
 #>
 

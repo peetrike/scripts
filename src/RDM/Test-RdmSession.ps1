@@ -3,27 +3,28 @@
 
 <#PSScriptInfo
     .VERSION 1.1.2
+
     .GUID 444d1e61-3fde-40f8-ac43-11a1b88c2c5c
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2019.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
     .TAGS rdm, report, network, port
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES RemoteDesktopManager
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
     .RELEASENOTES
-        [1.0.0] - 2019.09.30 - Initial release
+        [1.1.2] - 2021.10.06 - update RDM module requirement
+        [1.1.1] - 2019.09.30 - if -port is not specified then -TestRdmPort is assumed
+        [1.1.0] - 2019.09.30 - added support to scan RDM Session port
         [1.0.1] - 2019.09.30 - added example
                                added confirmation for full vault scan
-        [1.1.0] - 2019.09.30 - added support to scan RDM Session port
-        [1.1.1] - 2019.09.30 - if -port is not specified then -TestRdmPort is assumed
-        [1.1.2] - 2021.10.06 - update RDM module requirement
+        [1.0.0] - 2019.09.30 - Initial release
 
     .PRIVATEDATA
 #>
@@ -31,15 +32,12 @@
 <#
     .SYNOPSIS
         Test RDM sessions for open ports
-
     .DESCRIPTION
         This script checks RDM sessions for open ports.
-
     .EXAMPLE
         Test-RdmSession -Group MyCustomer -Port 3389
 
         Tests all RDP sessions in folder MyCustomer for open port tcp/3389
-
     .NOTES
         Remote Desktop manager must be installed on computer where script is being used.
 #>
@@ -96,7 +94,7 @@ $SessionParams = @{
 if ($Group) {
     Write-Verbose -Message ('searching for customer: {0}' -f $Group)
     $SessionParams.GroupName = $Group
-} elseif (-not ($Force -or $PSCmdlet.ShouldContinue("Do you really want to scan whole Vault?", "Full scan"))) {
+} elseif (-not ($Force -or $PSCmdlet.ShouldContinue('Do you really want to scan whole Vault?', 'Full scan'))) {
     exit
 }
 

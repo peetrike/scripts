@@ -2,17 +2,17 @@
 #Requires -Modules Indented.Net.Dns
 
 <#PSScriptInfo
-    .VERSION 0.1.0
+    .VERSION 0.1.2
     .GUID 44df3732-f427-452b-bfe3-cce783102778
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2020.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
     .TAGS dns, e-mail, PSEdition_Core, PSEdition_Desktop, Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.1.2] - 2021.12.31 - Moved script to Github
         [0.1.0] - 2020.09.04 - changed dependent module to make script compatible with PowerShell 7
         [0.0.2] - 2020.03.30 - Added DKIM record collection
         [0.0.1] - 2020.03.27 - Initial release
@@ -30,35 +31,28 @@
 <#
     .SYNOPSIS
         Returns mail-related DNS records for specified domain
-
     .DESCRIPTION
         Returns e-mail related DNS records for specified domain in object format.
-
     .EXAMPLE
-        PS C:\> Resolve-MailRecord -Name telia.ee
+        Resolve-MailRecord -Name telia.ee
 
         Returns MX and associated records for specified domain
-
     .EXAMPLE
-        PS C:\> Get-Content domains.txt | Resolve-MailRecord
+        Get-Content domains.txt | Resolve-MailRecord
 
         Returns MX and associated records for all names in domains.txt file.
-
     .INPUTS
         List of names to resolve
-
     .OUTPUTS
         Found DNS records
-
     .NOTES
         The returned records are:
         * MX records
         * A/AAAA records of names mentioned in MX records
         * TXT records for SPF (records that start with 'v=spf')
         * TXT records for DMARC (_dmarc.doamin)
-
     .LINK
-        PoshNet module: https://www.powershellgallery.com/packages/poshnet/
+        Get-Dns https://github.com/indented-automation/Indented.Net.Dns/blob/master/Indented.Net.Dns/help/Get-Dns.md
 #>
 
 [CmdLetBinding()]

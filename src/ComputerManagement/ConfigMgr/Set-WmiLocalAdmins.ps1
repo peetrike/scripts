@@ -1,17 +1,17 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.1.0
+    .VERSION 1.1.1
     .GUID a686b043-dd13-4fe7-9f2f-f3b602622772
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2019.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
     .TAGS local, account, admin, ConfigMgr, report, wmi
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.0] 2021.12.31 - moved script to Github
         [1.1.0] 2019.10.29 - added -PassThru parameter
                            - added check before creating class
                            - fixed namespace existence check
@@ -30,7 +31,6 @@
 <#
     .DESCRIPTION
         Updates local admin group members to CIM repository
-
 #>
 
 [CmdletBinding()]
@@ -50,7 +50,7 @@ $GroupName = 'Administrators'
     # create namespace, if needed
 if (-not (Get-WmiObject -Namespace 'root' -Class "__Namespace" | Where-Object { $_.Name -eq $NamespaceName })) {
     Write-Verbose -Message ('Creating namespace: {0}' -f $NameSpace)
-    $ns = ([WMICLASS]"\\.\root:__Namespace").CreateInstance()
+    $ns = ([WMICLASS]'\\.\root:__Namespace').CreateInstance()
     #$ns = New-Object -TypeName System.Management.ManagementClass -ArgumentList ('root:__namespace', [string]::Empty , $null )
     $ns.Name = $NameSpaceName
     $null = $ns.Put()
@@ -61,19 +61,19 @@ if (-not (Get-WmiObject -List -Namespace $NameSpace -Class $ClassName)) {
     Write-Verbose -Message ('Creating WMI class: {0}' -f $ClassName)
     $newClass = New-Object -TypeName System.Management.ManagementClass -ArgumentList ($NameSpace, [String]::Empty, $null)
     $newClass.__CLASS = $ClassName
-    $newClass.Qualifiers.Add("Static", $true)
+    $newClass.Qualifiers.Add('Static', $true)
 
-    $newClass.Properties.Add("Name", [Management.CimType]::String, $false)
-    $newClass.Properties["Name"].Qualifiers.Add("Key", $true)
-    $newClass.Properties.Add("Domain", [Management.CimType]::String, $false)
-    $newClass.Properties["Domain"].Qualifiers.Add("Key", $true)
+    $newClass.Properties.Add('Name', [Management.CimType]::String, $false)
+    $newClass.Properties['Name'].Qualifiers.Add('Key', $true)
+    $newClass.Properties.Add('Domain', [Management.CimType]::String, $false)
+    $newClass.Properties['Domain'].Qualifiers.Add('Key', $true)
 
-    $newClass.Properties.Add("Caption", [Management.CimType]::String, $false)
+    $newClass.Properties.Add('Caption', [Management.CimType]::String, $false)
     #$newClass.Properties.Add("Description", [Management.CimType]::String, $false)
-    $newClass.Properties.Add("LocalAccount", [Management.CimType]::Boolean, $false)
+    $newClass.Properties.Add('LocalAccount', [Management.CimType]::Boolean, $false)
     #$newClass.Properties.Add("SID", [Management.CimType]::String, $false)
     #$newClass.Properties.Add("Status", [Management.CimType]::String, $false)
-    $newClass.Properties.Add("Type", [Management.CimType]::String, $false)
+    $newClass.Properties.Add('Type', [Management.CimType]::String, $false)
     $null = $newClass.Put()
 }
 

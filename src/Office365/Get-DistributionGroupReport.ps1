@@ -12,7 +12,7 @@
     .TAGS office365 group report
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -31,7 +31,6 @@
 <#
     .SYNOPSIS
         Generate distribution group members report.
-
     .DESCRIPTION
         This script generates Office 365 Distribution Group members report.
         Report is saved as one .csv file or separate .csv file for each
@@ -39,40 +38,31 @@
 
         When you haven't already established connection to Exchange Online, the
         Credential parameter is required to connect to Exchange Online.
-
     .EXAMPLE
         Get-DistributionGroupReport -Credential $MyCredential
 
         This example uses previously obtained credential variable.
-
     .EXAMPLE
         Get-DistributionGroupReport -OutputFile Multiple
 
         This example generates separate report for each distribution group.
-
     .EXAMPLE
         Get-DistributionGroupReport -Filter "Name -like 'Group*'"
 
         This example uses custom filter to get list of distribution groups.
-
     .INPUTS
         None
-
     .OUTPUTS
         None
-
     .NOTES
         You need to be assigned permissions before you can run this script.
         To find the permissions required to run any cmdlet or parameter in your
         organization, see Find the permissions required to run any Exchange
         cmdlet (https://docs.microsoft.com/powershell/exchange/find-exchange-cmdlet-permissions).
-
     .LINK
         Get-DistributionGroup
-
     .LINK
         Get-DistributionGroupMember
-
     .LINK
         https://docs.microsoft.com/powershell/exchange/filter-properties
 #>

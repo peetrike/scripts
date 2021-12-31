@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
 
     .GUID 6e7bc3e9-22b7-4915-9246-e65816f49a78
 
@@ -13,7 +13,7 @@
     .TAGS report, logon, event, AD
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.3] - 2021.12.31 - Moved script to Github
         [1.0.2] - 2021.12.29 - Fixed required modules
         [1.0.1] - 2021.01.07 - Initial Release
         [1.0.0] - 2021.01.06 - Started work
@@ -35,10 +36,12 @@
         This script generates logon/logoff event report.
     .EXAMPLE
         .\Get-AuditLogonReport.ps1 -After ([datetime]::Today) | Out-Gridview
+
         This example generates report of logon events for today.  Result
         is displayed in Grid View.
     .EXAMPLE
         .\Get-AuditLogonReport.ps1 -Type Failure, Logon | Export-Csv -UseCulture -Path logonreport.csv
+
         This example generates report of successful and failed logons.
         The result is saved as .csv file
     .LINK

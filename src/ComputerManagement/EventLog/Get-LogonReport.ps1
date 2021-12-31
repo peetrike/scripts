@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.1
+    .VERSION 1.0.2
 
     .GUID aeb78b6a-0f41-4d74-b914-4f4c26f31acb
 
@@ -12,7 +12,7 @@
     .TAGS report, logon, event
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.2] - 2021.12.31 - Moved script to Github
         [1.0.1] - 2020.11.04 - change date conversion
         [1.0.0] - 2020.11.03 - Initial Release
 
@@ -33,10 +34,12 @@
         This script generates logon/logoff event report.
     .EXAMPLE
         .\Get-LoonReport.ps1 -After ([datetime]::Today) | Out-Gridview
+
         This example generates report of logon events for today.  Result
         is displayed in Grid View.
     .EXAMPLE
         .\Get-LoonReport.ps1 -Type Failure, Logon | Export-Csv -UseCulture -Path logonreport.csv
+
         This example generates report of successful and failed logons.
         The result is saved as .csv file
     .LINK

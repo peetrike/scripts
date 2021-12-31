@@ -12,7 +12,7 @@
 
     .TAGS rdm, network, port
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES RemoteDesktopManager
@@ -20,8 +20,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.0.0] - 2019.09.30 - Initial release
         [1.0.1] - 2021.10.06 - Changed RDM module requirement
+        [1.0.0] - 2019.09.30 - Initial release
 
     .PRIVATEDATA
 #>

@@ -2,7 +2,7 @@
 # Requires -RunAsAdministrator
 
 <#PSScriptInfo
-    .VERSION 1.0
+    .VERSION 1.0.0
     .GUID 4fd6dfae-9f42-4b2d-bd1a-a938e7d42544
 
     .AUTHOR Meelis Nigols
@@ -12,7 +12,7 @@
     .TAGS tls, security, Windows, PSEdition_Desktop, PSEdition_Core
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -75,9 +75,7 @@ param (
 )
 
 function Test-IsAdmin {
-    # .EXTERNALHELP PWAddins-help.xml
     [CmdletBinding()]
-    [OutputType([Boolean])]
     param()
 
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()

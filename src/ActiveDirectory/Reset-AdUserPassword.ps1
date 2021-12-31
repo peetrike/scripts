@@ -12,7 +12,7 @@
     .TAGS ActiveDirectory, AD, user, password, reset
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.2] - 2021.12.31 - Moved script to Github.
         [0.0.1] - 2021.01.16 - Initial release
 
     .PRIVATEDATA

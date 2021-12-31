@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
     .GUID 5c09315d-fdec-4dfd-85e8-f8a61cf67a40
 
     .AUTHOR Meelis Nigols
@@ -12,7 +12,7 @@
     .TAGS ActiveDirectory, AD, user
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.3] - 2021.12.31 - moved script to Github
         [1.0.2] - 2020.03.23 - fixed replace, when one or both properties are empty
         [1.0.1] - 2019.11.4 - changed commend-based-help
         [1.0.0] - 2019.11.1 - Initial release
@@ -47,23 +48,23 @@
         Shows what would happen if the script runs. The changes are not run.
 
     .EXAMPLE
-        PS C:\> Get-ADUser myAdmin | Switch-ADUserProperty -Property1 'homePhone' -Property2 'otherHomePhone'
+        Get-ADUser myAdmin | Switch-ADUserProperty -Property1 'homePhone' -Property2 'otherHomePhone'
 
         Switches phone attributes 'homePhone' and 'otherHomePhone' values on user 'myAdmin'.
 
     .EXAMPLE
-        PS C:\> Switch-ADUserProperty -Filter * -SearchBase 'OU=Users,OU=company,DN=int,DN=company,DN=com'
+        Switch-ADUserProperty -Filter * -SearchBase 'OU=Users,OU=company,DN=int,DN=company,DN=com'
 
         Switches default property values on all users from OU named 'Users'.
 
     .EXAMPLE
-        PS C:\> Switch-ADUserProperty -Filter 'Name -like "Thomas*"' -Property1 'mobile' -Property2 'otherMobile'
+        Switch-ADUserProperty -Filter 'Name -like "Thomas*"' -Property1 'mobile' -Property2 'otherMobile'
 
         Switches property 'mobile' and 'otherMobile' values on users whose full name
         starts with 'Thomas'.
 
     .EXAMPLE
-        PS C:\> Switch-ADUserProperty -Filter 'userPrincipalName -like "*@company.com" -PassThru
+        Switch-ADUserProperty -Filter 'userPrincipalName -like "*@company.com" -PassThru
 
         Switches default property values on users whose UserPrincpalName ends with '@company.com'.
         Show all changed user accounts with switched phone attributes.
@@ -85,7 +86,7 @@
         Please be sure that you enter property names correctly.
 
     .LINK
-        About ActiveDirectory Filter: https://docs.microsoft.com/en-us/previous-versions/windows/powershell-scripting/dn910987(v=wps.630)
+        About ActiveDirectory Filter: https://docs.microsoft.com/previous-versions/windows/powershell-scripting/dn910987(v=wps.630)
 
     .LINK
         Get-ADUser
@@ -146,11 +147,13 @@ Param(
     $PassThru
 )
 
-process {
+begin {
     $UserProps = @{
         Properties = $Property1, $Property2
     }
+}
 
+process {
     if ($PSCmdlet.ParameterSetName -eq 'Identity') {
         $UserProps.Identity = $Identity.SID
     } else {

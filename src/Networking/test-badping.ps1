@@ -1,29 +1,22 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-
     .VERSION 1.0.1
 
     .GUID 4ac33aa8-f03f-46d9-86ae-24067d634bd6
 
     .AUTHOR CPG4285
-
     .COMPANYNAME Telia Eesti AS
-
     .COPYRIGHT (c) Telia Eesti AS 2018.  All rights reserved.
 
     .TAGS network, ping
 
     .LICENSEURI https://opensource.org/licenses/MIT
-
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
-
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
-
     .REQUIREDSCRIPTS
-
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
@@ -31,44 +24,36 @@
         [1.0.0] - 2019.06.18 - Initial release
 
     .PRIVATEDATA
-
 #>
 
 <#
     .SYNOPSIS
         Pings remote computers and collects too long and unsuccessful ones.
-
     .DESCRIPTION
         This script tests connection to remote computer by pinging them.
         Then it collects unsuccessful and too long ping results and saves
         them in log file.
-
     .INPUTS
         System.String[] or PSObject[].
 
         Hosts that should be pinged
-
     .OUTPUTS
         System.Management.ManagementObject#root\cimv2\Win32_PingStatus
 
         Ping status objects that are considered good
-
     .EXAMPLE
         Test-BadPing.ps1 -ComputerName www.example.com
 
         Ping host www.example.com 10 times and record unsuccessful responses in log file.
-
     .EXAMPLE
         Test-BadPing.ps1 -ComputerName host1, host2 -Count 2
 
         Ping several hosts 2 times and record unsuccessful responses in log file.
-
     .EXAMPLE
         Test-BadPing.ps1 host1, host2 -Limit 200
 
         Ping several hosts 10 times and record all responses that did not reach
         destination or which took more than 200 ms.
-
     .EXAMPLE
         Test-BadPing.ps1 -LogFile mylog.txt
 
@@ -95,7 +80,7 @@ param (
     $Limit = 500,
         [string]
         # Specifies filename for too long ping responses
-    $LogFile = (join-path -Path $PWD -ChildPath 'badpings.log'),
+    $LogFile = (Join-Path -Path $PWD -ChildPath 'badpings.log'),
         [int]
         # Specifies how many times ping is performed
     $Count = 10

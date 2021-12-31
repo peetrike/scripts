@@ -3,15 +3,18 @@
 # Requires -RunAsAdministrator
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
+
     .GUID 12786da4-6394-4fa5-b9fc-82ed8853ec8f
+
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2020.  All rights reserved.
 
     .TAGS acl, folder, report
+
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES NTFSSecurity
@@ -19,6 +22,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.3] 2021.12.31 - Moved script to Github
         [1.0.2] 2020.07.16 - Added folders with Access Denied into report.
         [1.0.1] 2020.07.16 - Added confirmation about report file existing before starting.
                            - when passing several folders to script, result is appended to report file.
@@ -31,37 +35,31 @@
 <#
     .SYNOPSIS
         Generates folder tree ACL report.
-
     .DESCRIPTION
         This script generates folder tree ACL report.
 
         All permissions are included for report root folder, but only explicitly defined
-        (not inherited) permissions are included for subfolders.
-
+        (not inherited) permissions are included for subfoders.
     .EXAMPLE
-        PS C:\> Get-FolderACL -Path .\source -ReportFile .\PermissionReport.csv
+        Get-FolderACL -Path .\source -ReportFile .\PermissionReport.csv
 
         This command generates report for path .\source.  Report is written to file PermissionReport.csv
-
     .EXAMPLE
-        PS C:\> Get-Item c:\folder | Get-FolderACL -PassThru | Out-GridView
+        Get-Item c:\folder | Get-FolderACL -PassThru | Out-GridView
 
         This command generates report for path c:\folder and passes it to Out-GridView window
-
     .INPUTS
         String or System.IO.DirectoryInfo
 
         Folders that have to be included in report
-
     .OUTPUTS
         None or ACL report object collection (with -PassThru parameter)
-
     .NOTES
         When user running script doesn't have access to folder, then error is recorded on console,
         but not in report file.
-
     .LINK
         NTFSSecurity module: https://github.com/raandree/NTFSSecurity
+    .LINK
         Get-ChildItem
 #>
 
@@ -152,7 +150,6 @@ process {
         Get-AceList -Path $FolderItem.FullName |
             Select-Object -Property *, $RootPathItem, $RelativePathItem -ExcludeProperty Path
 
-
         $FolderTree = Get-ChildItem2 -Path $item -Recurse -Directory
         foreach ($folder in $FolderTree) {
             $RelativePath = $folder.FullName.Replace($ItemFullName, '').TrimStart('\')
@@ -164,7 +161,7 @@ process {
 
     if ($ReportFile) {
         $AceList |
-            Export-Csv -NoTypeInformation -UseCulture -Encoding Default -Path $ReportFile -Append
+            Export-Csv -NoTypeInformation -UseCulture -Encoding utf8 -Path $ReportFile -Append
     }
 
     if ($PassThru) {

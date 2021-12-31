@@ -1,16 +1,16 @@
 ﻿#Requires -Version 3.0
 
 <#PSScriptInfo
-    .VERSION 1.1.0
+    .VERSION 1.1.1
     .GUID 29e09416-4881-4cbc-ac7e-bf91adc25e9b
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2019.  All rights reserved.
 
-    .TAGS group, report, remote
+    .TAGS group, report, remote, PSEdition_Desktop, Windows
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -18,6 +18,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.1] - 2021.12.31 - Moved script to Github
         [1.1.0] - 2019.10.28 - changed minimum Powershell version to 3.0
                              - if report file exists, the results are appended to end of file
         [1.0.0] - 2019.10.28 - initial release
@@ -28,21 +29,19 @@
 <#
     .SYNOPSIS
         Generates local group members report for local computer
-
     .DESCRIPTION
         This script connects to remote computers and generates local group
         members report.  The result is saved to CSV file.
 
         If report file already exists, the new data is appended to the end of the file.
-
     .EXAMPLE
-        PS C:\> Get-LocalGroupReport.ps1 -Group Administrators -Path .\report.csv
+        Get-LocalGroupReport.ps1 -Group Administrators -Path .\report.csv
 
         Report the members of Administrators group to file 'report.csv'
-
     .LINK
-        Get-LocalGroupMember - https://docs.microsoft.com/et-ee/powershell/module/Microsoft.PowerShell.LocalAccounts/Get-LocalGroupMember
-        net localgroup - https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc725622(v=ws.11)
+        Get-LocalGroupMember - https://docs.microsoft.com/powershell/module/Microsoft.PowerShell.LocalAccounts/Get-LocalGroupMember
+    .LINK
+        net localgroup - https://docs.microsoft.com/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc725622(v=ws.11)
 #>
 
 [CmdletBinding()]
@@ -67,7 +66,6 @@ Param(
         # Adds Timestamp to report file name.
     $ReportFileNameTimeStamp
 )
-
 
 if (-not (Get-Command -Name Get-LocalGroupMember -ErrorAction SilentlyContinue) ) {
     function Get-LocalGroupMember {
@@ -280,7 +278,7 @@ $FileName = '{0}{1}.csv' -f $Matches[1], $FileTimeSuffix
 
 $CsvProps = @{
     UseCulture        = $true
-    Encoding          = 'Default'
+    Encoding          = 'utf8'
     NoTypeInformation = $true
     Path              = Join-Path -Path $FolderName -ChildPath $FileName
     Append            = $true

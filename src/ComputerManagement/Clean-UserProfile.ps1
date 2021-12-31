@@ -2,7 +2,7 @@
 #Requires -Modules UserProfile
 
 <#PSScriptInfo
-    .VERSION 2.0.1
+    .VERSION 2.0.2
     .GUID cba62666-c56b-4cb7-b5f7-b8f696482688
 
     .AUTHOR CPG4285
@@ -12,7 +12,7 @@
     .TAGS user, profile, cleanup
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES UserProfile
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.0.2] - 2021.12.31 - Moved script to Github
         [2.0.1] - 2021-07-16 - Fixed unknown local user discovery
         [2.0.0] - 2021-07-16 - Changed:
             - Replace -LocalOnly with -Target

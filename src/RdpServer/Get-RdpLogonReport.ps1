@@ -18,7 +18,7 @@
 
 Param(
         [Parameter(
-            HelpMessage = "Enter a local or remote hostname"
+            HelpMessage = 'Enter a local or remote hostname'
         )]
         [string]
         # Specifies the computername where to get events.

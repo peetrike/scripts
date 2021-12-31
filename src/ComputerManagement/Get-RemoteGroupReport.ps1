@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0
+    .VERSION 1.0.1
     .GUID b592fe2f-d64a-4370-8ce5-ca241cb9c5f2
 
     .AUTHOR Meelis Nigols
@@ -10,7 +10,7 @@
 
     .TAGS group, report, remote
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -18,6 +18,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.1] - 2021.12.31 - Moved script to Github
         [1.0.0] - 2019.10.17 - initial release
 
     .PRIVATEDATA
@@ -26,7 +27,6 @@
 <#
     .SYNOPSIS
         Generates local group members report for remote computers
-
     .DESCRIPTION
         This script connects to remote computers and generates local group
         members report.  The result is saved to CSV file with name
@@ -40,32 +40,28 @@
         guaranteed new file, you can specify -ReportFileNameTimeStamp on
         command line.  That appends current datetime to filename, ensuring
         unique filename for every script run.
-
     .EXAMPLE
         PS C:\> Get-RemoteGroupReport.ps1 -ComputerName $env:COMPUTERNAME -Group Administrators
 
         Connect to local computer and report the members of Administrators group
-
     .EXAMPLE
         PS C:\> Get-Content computers.txt | Get-RemoteGroupReport.ps1 -Group Users -Credential 'domain\user'
 
-        Take computernames from computers.txt file and report members of group Users.
+        Take computer names from computers.txt file and report members of group Users.
         Use 'domain\user' credential to connect to remote computers.
-
     .EXAMPLE
         PS C:\> Get-RemoteGroupReport.ps1 -CN server1 -Group Users, Administrators -OutputType Multiple
 
         Connect to remote computer and report the members in two groups into separate file for each group.
-
     .EXAMPLE
         PS C:\> Get-RemoteGroupReport.ps1 -ComputerName server1 -Group Administrators -ReportFileNameTimeStamp
 
         Connect to remote computer and report the members of group Administrators.
         Have current datetime included in filename.
-
     .LINK
-        Get-LocalGroupMember - https://docs.microsoft.com/et-ee/powershell/module/Microsoft.PowerShell.LocalAccounts/Get-LocalGroupMember
-        net localgroup - https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc725622(v=ws.11)
+        Get-LocalGroupMember - https://docs.microsoft.compowershell/module/Microsoft.PowerShell.LocalAccounts/Get-LocalGroupMember
+    .LINK
+        net localgroup - https://docs.microsoft.com/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc725622(v=ws.11)
 #>
 
 [CmdletBinding()]
@@ -81,10 +77,10 @@ Param(
         [string[]]
         # Specifies the computers on which the command runs.
     $ComputerName,
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]
+        [PSCredential]
+        [Management.Automation.Credential()]
         # specifies credential for connecting to remote computers
-    $Credential = [System.Management.Automation.PSCredential]::Empty,
+    $Credential = [Management.Automation.PSCredential]::Empty,
         [Parameter(
             Mandatory = $true,
             HelpMessage = 'The name of the group to report'

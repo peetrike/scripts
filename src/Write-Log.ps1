@@ -2,15 +2,17 @@
 
 <#PSScriptInfo
     .VERSION 1.0.1
+
     .GUID eadd2163-b84f-46dc-9ccd-d6f16b26a2ab
-    .AUTHOR CPG4285
-    .COMPANYNAME
-    .COPYRIGHT
 
-    .TAGS
+    .AUTHOR Peter Wawa
+    .COMPANYNAME !ZUM!
+    .COPYRIGHT (c) 2021 Peter Wawa.  All rights reserved.
 
-    .LICENSEURI
-    .PROJECTURI
+    .TAGS log
+
+    .LICENSEURI https://opensource.org/licenses/MIT
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -18,8 +20,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [2019-10-29] - 1.0.0 - Initial release
         [2021-12-11] - 1.0.1 - Add pipeline support
+        [2019-10-29] - 1.0.0 - Initial release
 
     .PRIVATEDATA
 #>

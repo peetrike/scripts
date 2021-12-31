@@ -2,16 +2,16 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
     .GUID a3b444d6-9e92-4f51-a8dc-dbd5aa155eea
 
     .AUTHOR Jaanus Jõgisu
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2019.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
     .TAGS ActiveDirectory, AD, Certificate, import
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES ActiveDirectory
@@ -19,12 +19,13 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.0.0] - 2019.10.08 - Initial release
+        [1.0.3] - 2021.12.31 - moved script to Github
+        [1.0.2] - 2019.12.17 - added support for Residence card of long-term resident
         [1.0.1] - 2019.10.08 - changed:
             - if there is no value in $IdProperty, a warning is showed and script moves to next user
             - clearing of alternate identities is only performed, if new identity is discovered
             - a warning is showed, if no certificates found in LDAP repository
-        [1.0.2] - 2019.12.17 - added support for Residence card of long-term resident
+        [1.0.0] - 2019.10.08 - Initial release
 
     .PRIVATEDATA
 #>
@@ -44,12 +45,12 @@
     .PARAMETER Confirm
         Prompts you for confirmation before making changes.
     .EXAMPLE
-        PS C:\> Import-SKCertificate.ps1 -ADUser user
+        Import-SKCertificate.ps1 -ADUser user
 
         This command adds certificate mappings to AD User account called user
 
     .EXAMPLE
-        PS C:\> Get-ADUser -filter {Name -like 'user*'} | Import-SKCertificate.ps1 -IdProperty EmployeeId
+        Get-ADUser -filter {Name -like 'user*'} | Import-SKCertificate.ps1 -IdProperty EmployeeId
 
         This command adds certificate mappings to several AD User accounts
         that are found by Get-ADUser cmdlet and passed to script through pipeline.
@@ -87,7 +88,7 @@ param(
 
 begin {
     Function Reevers([string]$what) {
-        $paths = $what -split ", "
+        $paths = $what -split ', '
         [array]::Reverse($paths)
         return $paths -join ','
     }
@@ -97,14 +98,14 @@ begin {
     $LDAPDirectoryService = 'esteid.ldap.sk.ee:636'
     $LDAPServer = New-Object System.DirectoryServices.Protocols.LdapConnection $LDAPDirectoryService
 
-    $LDAPServer.AuthType = [System.DirectoryServices.Protocols.AuthType]::Anonymous
+    $LDAPServer.AuthType = [DirectoryServices.Protocols.AuthType]::Anonymous
     $LDAPServer.SessionOptions.ProtocolVersion = 3
     $LDAPServer.SessionOptions.SecureSocketLayer = $True
 
     # Import-Module ActiveDirectory
 
     $DomainDN = 'dc=ESTEID,c=EE'
-    $Scope = [System.DirectoryServices.Protocols.SearchScope]::Subtree
+    $Scope = [DirectoryServices.Protocols.SearchScope]::Subtree
     $AttributeList = @('usercertificate;binary')
 }
 
@@ -144,7 +145,7 @@ process {
             }
 
             foreach ($UserCert in $CertList.Attributes.'usercertificate;binary') {
-                $cert = [System.Security.Cryptography.X509Certificates.X509Certificate2]$UserCert
+                $cert = [Security.Cryptography.X509Certificates.X509Certificate2]$UserCert
                 Write-Verbose -Message ('Found certificate with subject: {0}' -f $Cert.Subject)
 
                     # Active Directory ootab <I>.<S> ridasid teistpidi kui sertifikaadist lugedes

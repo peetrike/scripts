@@ -27,9 +27,7 @@ param (
 )
 
 function Test-IsAdmin {
-    # .EXTERNALHELP PWAddins-help.xml
     [CmdletBinding()]
-    [OutputType([Boolean])]
     param()
 
     $currentUser = [Security.Principal.WindowsIdentity]::GetCurrent()

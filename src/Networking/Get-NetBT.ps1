@@ -26,7 +26,7 @@ $ClassName = 'Win32_NetworkAdapterConfiguration'
 if (Get-Command Get-CimInstance -ErrorAction SilentlyContinue) {
     Write-Verbose -Message 'Using CIM cmdlets'
     $AdapterName = @{
-        Name = 'Name'
+        Name       = 'Name'
         Expression = {
             (Get-CimAssociatedInstance -InputObject $_ -Verbose:$false).NetConnectionId
         }
@@ -40,7 +40,7 @@ if (Get-Command Get-CimInstance -ErrorAction SilentlyContinue) {
 } else {
     Write-Verbose -Message 'Using WMI cmdlets'
     $AdapterName = @{
-        Name = 'Name'
+        Name       = 'Name'
         Expression = {
             $_.GetRelated('Win32_NetworkAdapter').NetConnectionId
         }

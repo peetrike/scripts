@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 
 <#PSScriptInfo
-    .VERSION 0.5.1
+    .VERSION 0.5.2
     .GUID 6716a06d-01af-4654-acec-bfe28e1214b6
 
     .AUTHOR Meelis Nigols
@@ -11,7 +11,7 @@
     .TAGS office365 connect PSEdition_Desktop Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES AzureAD, MSOnline, ExchangeOnlineManagement, Microsoft.Online.SharePoint.PowerShell, MicrosoftTeams
@@ -19,7 +19,7 @@
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
-    .RELEASENOTES https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/browse/src/Office365/Connect-O365/CHANGELOG.md
+    .RELEASENOTES https://github.com/peetrike/scripts/blob/master/src/Office365/Connect-O365/CHANGELOG.md
 
     .PRIVATEDATA
 #>
@@ -38,7 +38,6 @@
 
         This command connects to Office 365 admin interfaces using specified username and TenantID.
         The interactive authentication is automatically used.
-
     .NOTES
         Exchange and Security & Compliance Center connections use ExO v2 module, if available
         SharePoint Online only uses Microsoft.Online.SharePoint.PowerShell module

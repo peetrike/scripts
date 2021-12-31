@@ -2,7 +2,7 @@
 #Requires -Modules PrintManagement
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
     .GUID d21e3c0c-65c3-40c6-9509-795cca667081
 
     .AUTHOR CPG4285
@@ -12,7 +12,7 @@
     .TAGS install, printer, driver
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES PrintManagement
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.3] - 2021-12-31 - Moved script to Github.
         [1.0.2] - 2021-12-30 - when no parameters on command line, use PrinterPackage.json on script folder
         [1.0.1] - 2021-12-30 - Add cleanup
         [1.0.0] - 2021-12-29 - Initial release
@@ -31,31 +32,24 @@
 <#
     .SYNOPSIS
         Install Printer drivers on local system.
-
     .DESCRIPTION
         Install Printer drivers according to package file.
-
     .EXAMPLE
         Install-PrinterDriver.ps1 -Customer myCustomer
 
         This example downloads and installs driver package for specified customer.
-
     .EXAMPLE
         Install-PrinterDriver.ps1 -PackageFile .\PrinterPackage.json
 
         This example downloads and installs drivers based on specified package file.
-
     .INPUTS
         None
-
     .OUTPUTS
         pnputil.exe output
-
     .NOTES
         This script requires admin privileges.
 
         The package file is .json file containing details needed to add drivers.
-
     .LINK
         Add-PrinterDriver
     .LINK
@@ -113,7 +107,7 @@ switch ($PSCmdlet.ParameterSetName) {
             }
         }
     }
-    Default {
+    'Customer' {
         $PackageUri = 'http://miracle.mlxplus.com/Kliendid', $Customer, 'PrinterPackage.json' -join '/'
         $Package = Invoke-RestMethod -Uri $PackageUri
     }

@@ -3,6 +3,7 @@
 
 <#PSScriptInfo
     .VERSION 1.0.0
+
     .GUID d7d66c86-d007-4dad-8e1c-3be5552e4eb7
 
     .AUTHOR Meelis Nigols
@@ -12,7 +13,7 @@
     .TAGS rdp shadow PSEdition_Desktop Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES RemoteDesktop, CimCmdlets
@@ -46,7 +47,7 @@
     .NOTES
         Be sure that you configure the environment before using this script.
     .LINK
-        Farm configuration instructions: https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/browse/src/RdpServer/ShadowSession/README.md
+        Farm configuration instructions: https://github.com/peetrike/scripts/blob/master/src/RdpServer/ShadowSession/README.md
 #>
 
 [CmdLetBinding(

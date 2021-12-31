@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.1.0
+    .VERSION 1.1.1
     .GUID 311baf21-66e2-46f4-9e27-16dbf4aa51a8
 
     .AUTHOR Meelis Nigols
@@ -11,7 +11,7 @@
     .TAGS log, remove
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.1] - 2021.12.31 - Moved script to Github
         [1.1.0] - 2020-05-04 - Now, -Months filters out files from beginning of month, not from current day in month
         [1.0.1]  Fixed Powershell 2.0 compatibility
         [1.0.0]  Initial release
@@ -29,26 +30,22 @@
 <#
     .SYNOPSIS
         Remove old log files
-
     .DESCRIPTION
         This script will remove all files that are older than specified number of days (or months).
-
     .EXAMPLE
-        PS C:\> Remove-OldLog.ps1 -Days 30
+        Remove-OldLog.ps1 -Days 30
+
         This command removes all files older than 30 days in current directory.
-
     .EXAMPLE
-        PS C:\> Get-ChildItem c:\logs | Remove-OldLog.ps1 -Months 3 -Filter *.log
-        This command removes all *.log files older than 3 months in subfolders under path c:\logs.
+        Get-ChildItem c:\logs | Remove-OldLog.ps1 -Months 3 -Filter *.log
 
+        This command removes all *.log files older than 3 months in subfolders under path c:\logs.
     .INPUTS
         Files to be removed
-
     .OUTPUTS
         None
-
     .LINK
-        Remove-Item: https://docs.microsoft.com/en-us/powershell/module/Microsoft.PowerShell.Management/Remove-Item
+        Remove-Item: https://docs.microsoft.com/powershell/module/Microsoft.PowerShell.Management/Remove-Item
 #>
 
 [CmdLetBinding(
@@ -67,17 +64,20 @@ param (
         })]
         [Alias('FullName')]
         [string[]]
-        # Specifies the path or paths to the files that you want to remove.  Wildcards are permitted.  The default location is the current directory (.).
+        # Specifies the path or paths to the files that you want to remove.  Wildcards are permitted.
+        # The default location is the current directory (.).
     $Path = $PWD,
         [string]
-        # Specifies a filter in the provider's format or language.  The value of this parameter qualifies the Path parameter.
+        # Specifies a filter in the provider's format or language.
+        # The value of this parameter qualifies the Path parameter.
     $Filter,
         [parameter(
             ParameterSetName = 'Days'
         )]
         [ValidateNotNullOrEmpty()]
         [int]
-        # Specifies how many days old files will be removed.  The default is 90 days.  Archive name contains full date.
+        # Specifies how many days old files will be removed.  The default is 90 days.
+        # Archive name contains full date.
     $Days = 90,
         [parameter(
             Mandatory = $true,
@@ -88,7 +88,8 @@ param (
         # Specifies how many months old files will be removed.  Archive name contains ony year and month.
     $Months,
         [switch]
-        # Indicates that this function gets the items in the specified locations and in all child items of the locations.
+        # Indicates that this function gets the items in the specified locations
+        # and in all child items of the locations.
     $Recurse,
         [switch]
         # Forces the function to remove items that cannot otherwise be changed
