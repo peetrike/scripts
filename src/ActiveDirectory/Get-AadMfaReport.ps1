@@ -1,18 +1,18 @@
 #Requires -Version 5.1
-#Requires -Modules MSOnline, telia.common
+#Requires -Modules MSOnline, telia.savedcredential
 
 <#PSScriptInfo
-    .VERSION 1.0.1
+    .VERSION 1.0.2
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
-    .TAGS Azure, ActiveDirectory, AD, user, MFA, report
+    .TAGS Azure, ActiveDirectory, AD, user, MFA, report, PSEdition_Desktop, Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://bitbucket.atlassian.teliacompany.net/projects/PWSH/repos/scripts/
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES MSOnline
@@ -20,9 +20,10 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [0.0.1] - 2021.06.03 - Initial release
-        [1.0.0] - 2021.06.07 - Remove certificate-based authentication.
+        [1.0.2] - 2021.12.31 - Moved script to Github.
         [1.0.1] - 2021.06.07 - Remove redundant module dependency.
+        [1.0.0] - 2021.06.07 - Remove certificate-based authentication.
+        [0.0.1] - 2021.06.03 - Initial release
 
     .PRIVATEDATA
 #>
@@ -62,8 +63,8 @@
 
 param (
         [ValidateNotNull()]
-        [System.Management.Automation.PSCredential]
-        [System.Management.Automation.Credential()]
+        [PSCredential]
+        [Management.Automation.Credential()]
         # Specifies the user account credentials to use when performing this task.
     $Credential,
 
@@ -88,7 +89,6 @@ param (
         # specifies that only users with given MFA status should be returned.
     $MfaStatus = 'All'
 )
-
 
 try {
     $CompanyDetails = Get-MsolCompanyInformation -ErrorAction Stop
@@ -134,7 +134,7 @@ if ($PassThru.IsPresent) {
     $CsvFileName = $CompanyDetails.InitialDomain + '-MFA'
     $CsvProps = @{
         UseCulture        = $true
-        Encoding          = 'Default'
+        Encoding          = 'utf8'
         NoTypeInformation = $true
         Path              = Join-Path -Path $ReportPath -ChildPath ($CsvFileName + '.csv')
     }
