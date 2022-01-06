@@ -80,6 +80,7 @@ Function Get-NetFrameworkVersion {
                             #Type = $_.PSChildName
                             Version = $dotNet4Builds["$Release"].Version
                             Build   = $Release
+                            SP      = ''
                             Comment = $dotNet4Builds["$Release"].Comment
                         }
                     }
