@@ -5,11 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] 2022-02-09
+
+### Changed
+
+Changed warning message, when connecting with ExO v2 module failed.
+
 ## [0.5.2] 2021-12-31
 
 ### Changed
 
 Moved script to Github
+
 ## [0.5.1] 2021-06-01
 
 ### Changed

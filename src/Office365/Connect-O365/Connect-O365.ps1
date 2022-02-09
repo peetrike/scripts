@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 
 <#PSScriptInfo
-    .VERSION 0.5.2
+    .VERSION 0.5.3
     .GUID 6716a06d-01af-4654-acec-bfe28e1214b6
 
     .AUTHOR Meelis Nigols
@@ -206,10 +206,11 @@ try {
     }
 }
 
-if ($InitialDomain) {
+if ($TenantId -and $InitialDomain) {
     $orgName = $InitialDomain.split('.')[0]
     $ExConnectionUrl = 'https://ps.outlook.com/powershell-liveid?DelegatedOrg={0}' -f $InitialDomain
-    $CcConnectionUrl = 'https://ps.compliance.protection.outlook.com/powershell-liveid?DelegatedOrg={0}' -f $InitialDomain
+    $CcConnectionUrl =
+        'https://ps.compliance.protection.outlook.com/powershell-liveid?DelegatedOrg={0}' -f $InitialDomain
 } else {
     $orgName = ''
     $ExConnectionUrl = 'https://outlook.office365.com/powershell-liveid/'
@@ -241,9 +242,14 @@ if ($Exchange.IsPresent -or $All.IsPresent) {
         if ($Interactive) {
             Write-Warning -Message 'Interactive logon used, skipping Exchange connection'
         } else {
-            Write-Warning -Message 'EXO v2 module not available, importing direct PS session'
-            $SessionParams.ConfigurationName = 'Microsoft.Exchange'
+            if ($_.Exception.GetType().Name -like 'FileNotFoundException') {
+                Write-Warning -Message 'EXO v2 module not available, importing direct PS session'
+            } else {
+                Write-Warning -Message "EXO v2 module couldn't connect, trying direct PS session"
+            }
+            Write-Verbose -Message ('Using connection URI: {0}' -f $ExConnectionUrl)
             $SessionParams.ConnectionUri = $ExConnectionUrl
+            $SessionParams.ConfigurationName = 'Microsoft.Exchange'
             $Session = New-PSSession @SessionParams -Verbose:$false
             $null = Import-PSSession $Session -DisableNameChecking -Verbose:$false
         }
@@ -268,8 +274,13 @@ if ($CC.IsPresent -or $all.IsPresent) {
         if ($Interactive) {
             Write-Warning -Message 'Interactive logon used, skipping Control Center connection'
         } else {
-            Write-Verbose -Message 'EXO v2 module not available, importing direct Compliance Center session'
+            if ($_.Exception.GetType().Name -like 'FileNotFoundException') {
+                Write-Warning -Message 'EXO v2 module not available, importing direct Compliance Center session'
+            } else {
+                Write-Warning -Message "EXO v2 module couldn't connect, trying direct Compliance Center session"
+            }
             $SessionParams.Remove('ConfigurationName')
+            Write-Verbose -Message ('Using connection URI: {0}' -f $CcConnectionUrl)
             $SessionParams.ConnectionUri = $CcConnectionUrl
             $Session = New-PSSession @SessionParams -Verbose:$false
             $null = Import-PSSession $Session -DisableNameChecking -Prefix cc -Verbose:$false
