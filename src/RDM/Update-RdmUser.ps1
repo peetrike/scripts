@@ -65,7 +65,7 @@ param (
 if ($DataSource) {
     Get-RDMDataSource -Name $DataSource | Set-RDMCurrentDataSource
     #Update-RDMRepository
-    Update-RDMUI
+    #Update-RDMUI
 }
 
 Write-Verbose -Message ('Working with Data Source: {0}' -f $DataSource)
@@ -93,7 +93,7 @@ foreach ($user in Get-RDMUser) {
             $needsUpdate = $true
             $user.LastName = $AdUser.Surname
         }
-        if (-not $user.Email) {
+        if ($AdUser.mail -and -not $user.Email) {
             $needsUpdate = $true
             $user.Email = $AdUser.mail
         }

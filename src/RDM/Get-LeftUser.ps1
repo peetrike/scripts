@@ -3,12 +3,12 @@
 [CmdletBinding()]
 param (
         [string[]]
-    $DataSource = (Get-RDMDataSource).Name
+    $DataSource = (Get-RDMDataSource | Where-Object Type -like 'SQLServer').Name
 )
 
 foreach ($Source in $DataSource) {
     Get-RDMDataSource -Name $Source | Set-RDMCurrentDataSource
-    Update-RDMUI
+    #Update-RDMUI
 
     Get-RDMUser |
         Where-Object Name -like 'et\*' |
