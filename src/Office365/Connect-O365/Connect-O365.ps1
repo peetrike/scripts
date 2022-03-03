@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 
 <#PSScriptInfo
-    .VERSION 0.5.3
+    .VERSION 0.5.4
     .GUID 6716a06d-01af-4654-acec-bfe28e1214b6
 
     .AUTHOR Meelis Nigols
@@ -207,15 +207,18 @@ try {
 }
 
 if ($TenantId -and $InitialDomain) {
-    $orgName = $InitialDomain.split('.')[0]
     $ExConnectionUrl = 'https://ps.outlook.com/powershell-liveid?DelegatedOrg={0}' -f $InitialDomain
     $CcConnectionUrl =
         'https://ps.compliance.protection.outlook.com/powershell-liveid?DelegatedOrg={0}' -f $InitialDomain
 } else {
-    $orgName = ''
     $ExConnectionUrl = 'https://outlook.office365.com/powershell-liveid/'
     $CcConnectionUrl = 'https://ps.compliance.protection.outlook.com/powershell-liveid/'
 }
+
+if ($InitialDomain) {
+    $orgName = $InitialDomain.split('.')[0]
+}
+
 
 $SessionParams = @{
     Authentication   = 'Basic'

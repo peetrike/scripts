@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] 2022-03-03
+
+### Fixed
+
+Fixed Sharepoint connectivity
+
 ## [0.5.3] 2022-02-09
 
 ### Changed
