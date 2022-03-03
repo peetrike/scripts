@@ -74,8 +74,8 @@ foreach ($user in Get-RDMUser) {
     $needsUpdate = $false
     $notExist = $false
     try {
-        $AdUSer = Get-ADUser -Identity $user.Name.Split('\')[-1] -Properties mail
-        if (-not $AdUSer.Enabled) {
+        $AdUser = Get-ADUser -Identity $user.Name.Split('\')[-1] -Properties mail
+        if (-not $AdUser.Enabled) {
             $notExist = $true
         }
     } catch {
@@ -87,15 +87,15 @@ foreach ($user in Get-RDMUser) {
     } else {
         if (-not $user.FirstName) {
             $needsUpdate = $true
-            $user.FirstName = $AdUSer.GivenName
+            $user.FirstName = $AdUser.GivenName
         }
         if (-not $user.LastName) {
             $needsUpdate = $true
-            $user.LastName = $AdUSer.Surname
+            $user.LastName = $AdUser.Surname
         }
         if (-not $user.Email) {
             $needsUpdate = $true
-            $user.Email = $AdUSer.mail
+            $user.Email = $AdUser.mail
         }
         if ($needsUpdate -and $PSCmdlet.ShouldProcess($user.name, 'Update user')) {
             Set-RDMUser -User $user
