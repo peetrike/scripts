@@ -48,8 +48,8 @@
         Win32_UserProfile class: https://docs.microsoft.com/previous-versions/windows/desktop/usm/win32-userprofile
 #>
 
-[cmdletbinding(
-    supportsShouldProcess = $true
+[CmdletBinding(
+    SupportsShouldProcess = $true
 )]
 param (
         [int]
