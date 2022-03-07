@@ -40,12 +40,9 @@
     .INPUTS
         This script takes no input
 
-    .OUTPUTS
-        Output (if any)
 #>
 
 [CmdletBinding()]
-#[Alias('')]
 [OutputType([void])]
 
 param ()
@@ -71,4 +68,6 @@ if (Get-Module UserProfile -ListAvailable) {
         Install-Module PowerShellGet -Force
         Remove-Module PowerShellGet, PackageManagement
     }
+
+    Install-Module UserProfile -Force
 }
