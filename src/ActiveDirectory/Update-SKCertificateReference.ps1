@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.1
+    .VERSION 1.0.2
     .GUID 03ed78db-cabd-4969-b6dd-092cd2f31e7a
 
     .AUTHOR CPG4285
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.2] - 2022.05.12 - Add missing example description
         [1.0.1] - 2022.05.12 - Add ActiveDirectory module as external reference
         [1.0.0] - 2022.05.12 - Initial release
 
@@ -31,13 +32,17 @@
         Update ID Card certificate reference in user objects
     .DESCRIPTION
         This script will find AD user objects with ID Card certificate reference
-        and updates them to support KB5014754 update for Window Server
+        and updates them to support KB5014754 update for Window Server.
+
+        All enabled user accounts that have alternate certificate mappings, are considered.
     .PARAMETER Whatif
         Shows what would happen if the script runs. The changes will not be saved.
     .PARAMETER Confirm
         Prompts you for confirmation before making changes.
     .EXAMPLE
         Update-SKCertificateReference.ps1 -LeaveExisting
+
+        This example adds new certificate references and leaves existing ones.
 #>
 
 [CmdletBinding(
