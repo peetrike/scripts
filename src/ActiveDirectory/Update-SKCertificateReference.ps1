@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0
+    .VERSION 1.0.1
     .GUID 03ed78db-cabd-4969-b6dd-092cd2f31e7a
 
     .AUTHOR CPG4285
@@ -15,11 +15,12 @@
     .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
-    .EXTERNALMODULEDEPENDENCIES
+    .EXTERNALMODULEDEPENDENCIES ActiveDirectory
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.1] - 2022.05.12 - Add ActiveDirectory module as external reference
         [1.0.0] - 2022.05.12 - Initial release
 
     .PRIVATEDATA
@@ -39,7 +40,7 @@
         Update-SKCertificateReference.ps1 -LeaveExisting
 #>
 
-[cmdletbinding(
+[CmdletBinding(
     SupportsShouldProcess = $true
 )]
 Param(
