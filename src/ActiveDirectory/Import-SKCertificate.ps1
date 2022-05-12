@@ -2,12 +2,12 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.3
+    .VERSION 1.1.0
     .GUID a3b444d6-9e92-4f51-a8dc-dbd5aa155eea
 
     .AUTHOR Jaanus Jõgisu
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2022.  All rights reserved.
 
     .TAGS ActiveDirectory, AD, Certificate, import
     .LICENSEURI https://opensource.org/licenses/MIT
@@ -19,6 +19,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.0] - 2022.05.12 - Changed alternate certificate mapping to use
+                               SerialNumber instead of Subject, by default
         [1.0.3] - 2021.12.31 - moved script to Github
         [1.0.2] - 2019.12.17 - added support for Residence card of long-term resident
         [1.0.1] - 2019.10.08 - changed:
@@ -45,9 +47,10 @@
     .PARAMETER Confirm
         Prompts you for confirmation before making changes.
     .EXAMPLE
-        Import-SKCertificate.ps1 -ADUser user
+        Import-SKCertificate.ps1 -ADUser user -UseSubject
 
-        This command adds certificate mappings to AD User account called user
+        This command adds certificate mappings to AD User account called user.
+        The certificate mapping will use Subject attribute reference
 
     .EXAMPLE
         Get-ADUser -filter {Name -like 'user*'} | Import-SKCertificate.ps1 -IdProperty EmployeeId
@@ -67,10 +70,10 @@
         Modified by Meelis Nigols
 #>
 
-[cmdletbinding(
+[CmdletBinding(
     SupportsShouldProcess = $True
 )]
-param(
+param (
         [Parameter(
             Mandatory = $True,
             Position = 1,
@@ -82,15 +85,40 @@ param(
         # Specifies an Active Directory user object to process.
     $ADUser,
         [string]
-        # specifies AD user object property, where Personal Identity Code is stored.
-    $IdProperty = 'pager'
+        # Specifies AD user object property, where PNO value is stored.
+    $IdProperty = 'pager',
+        [switch]
+        # Use Subject reference instead of SerialNumber reference.
+    $UseSubject
 )
 
 begin {
-    Function Reevers([string]$what) {
-        $paths = $what -split ', '
-        [array]::Reverse($paths)
-        return $paths -join ','
+    function ConvertTo-ReversePath {
+        param (
+                [parameter(
+                    Mandatory = $true
+                )]
+                [string]
+            $Path
+        )
+
+        $PathList = $Path -split ', '
+        [array]::Reverse($PathList)
+        $PathList -join ','
+    }
+
+    function ConvertTo-ReverseSN {
+        param (
+                [parameter(
+                    Mandatory = $true
+                )]
+                [string]
+            $SerialNumber
+        )
+
+        $bytes = $SerialNumber -split '(?<=\G.{2})' | Where-Object { $_ }
+        [array]::Reverse($bytes)
+        -join $bytes
     }
 
     Add-Type -AssemblyName System.DirectoryServices.Protocols
@@ -100,35 +128,41 @@ begin {
 
     $LDAPServer.AuthType = [DirectoryServices.Protocols.AuthType]::Anonymous
     $LDAPServer.SessionOptions.ProtocolVersion = 3
-    $LDAPServer.SessionOptions.SecureSocketLayer = $True
+    $LDAPServer.SessionOptions.SecureSocketLayer = $true
 
     # Import-Module ActiveDirectory
 
     $DomainDN = 'dc=ESTEID,c=EE'
     $Scope = [DirectoryServices.Protocols.SearchScope]::Subtree
     $AttributeList = @('usercertificate;binary')
+    $MappingAttribute = 'altSecurityIdentities'
+    $ConfirmProps = @{
+        Confirm = $false
+        WhatIf  = $false
+    }
 }
 
 process {
     $userAccount = Get-ADUser -Identity $ADUser -Properties $IdProperty
-    Write-Verbose -Message ('Processing user account: {0}' -f $userAccount.samAccountName)
-    $Isikukood = $userAccount.$IdProperty
-    if (-not $Isikukood) {
+    $UserPrincipalName = $userAccount.UserPrincipalName
+    Write-Verbose -Message ('Processing user account: {0}' -f $UserPrincipalName)
+
+    $PNO = $userAccount.$IdProperty
+    if (-not $PNO) {
         $ErrorProps = @{
-            Message = 'User: {0} - Personal ID Code not found in attribute "{1}", skipping' -f $ADUser.Name, $IdProperty
+            Message = 'User: {0} - PNO value not found in attribute "{1}", skipping' -f $ADUser.Name, $IdProperty
         }
         Write-Warning @ErrorProps
     } else {
-        Write-Verbose -Message ('Using ID code: {0}' -f $Isikukood)
+        Write-Verbose -Message ('Using PNO code: {0}' -f $PNO)
 
-        $LDAPFilter = '(serialNumber=PNOEE-{0})' -f $Isikukood
-        $searchRequestProps = @(
+        $LDAPFilter = '(serialNumber=PNOEE-{0})' -f $PNO
+        $SearchRequest = New-Object System.DirectoryServices.Protocols.SearchRequest -ArgumentList @(
             $DomainDN
             $LDAPFilter
             $Scope
             $AttributeList
         )
-        $SearchRequest = New-Object System.DirectoryServices.Protocols.SearchRequest -ArgumentList $searchRequestProps
 
         try {
             $certResponse = $LDAPServer.SendRequest($SearchRequest)
@@ -140,30 +174,42 @@ process {
             Where-Object { $_.DistinguishedName -match 'ou=Authentication,o=(Identity|Digital|Residence card)' }
 
         if ($CertList) {
-            if ($PSCmdlet.ShouldProcess($userAccount.samAccountName, 'Clear old Name Mappings')) {
-                Set-ADUser -Identity $userAccount -Clear 'altsecurityidentities'
+            if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Clear old Name Mappings')) {
+                Set-ADUser -Identity $userAccount -Clear $MappingAttribute @ConfirmProps
             }
 
             foreach ($UserCert in $CertList.Attributes.'usercertificate;binary') {
-                $cert = [Security.Cryptography.X509Certificates.X509Certificate2]$UserCert
+                $cert = [Security.Cryptography.X509Certificates.X509Certificate2] $UserCert
                 Write-Verbose -Message ('Found certificate with subject: {0}' -f $Cert.Subject)
 
                     # Active Directory ootab <I>.<S> ridasid teistpidi kui sertifikaadist lugedes
-                $issuer = Reevers $cert.Issuer
-                $subject = Reevers $cert.Subject
+                    $issuer = ConvertTo-ReversePath $cert.Issuer
+                    $altSecurityIdentity = 'X509:<I>{0}' -f $issuer
+                    if ($UseSubject.IsPresent) {
+                        $subject = ConvertTo-ReversePath $cert.Subject
+                        $altSecurityIdentity += '<S>{0}' -f $subject
+                    } else {
+                        $Serial = ConvertTo-ReverseSN $cert.SerialNumber
+                        $altSecurityIdentity += '<SN>{0}' -f $Serial
+                    }
 
-                    # Ehitame Active Directory jaoks sobiva lause
-                $altSecurityIdentity = 'X509:<I>{0}<S>{1}' -f $issuer, $subject
-                # Write-Verbose -Message ('Using AltSecurityIndentity: {0}' -f $altSecurityIdentity)
-
-                if ($PSCmdlet.ShouldProcess($userAccount.samAccountName, 'Add Name Mapping')) {
+                if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Add Name Mapping')) {
                         # Määrame AD kasutaja Name Mappings väljale saadud väärtuse
-                    Set-ADUser -Identity $userAccount -Add @{'altsecurityidentities' = $altSecurityIdentity }
-                    Write-Output ("Name Mapping added to user: {0}, {1}" -f $userAccount.Name, $userAccount.$IdProperty)
+                    Set-ADUser -Identity $userAccount  @ConfirmProps -Add @{
+                        $MappingAttribute = $altSecurityIdentity
+                    }
+                    New-Object -TypeName PSCustomObject -Property @{
+                        UPN      = $UserPrincipalName
+                        PNO      = $PNO
+                        Identity = $altSecurityIdentity
+                    }
                 }
             }
         } else {
-            Write-Warning -Message ('User: {0} - no certificates found from {1}, skipping' -f $userAccount.samAccountName, $LDAPDirectoryService.split(':')[0])
+            Write-Warning -Message (
+                'User: {0} - no certificates found from {1}, skipping' -f
+                    $UserPrincipalName, $LDAPDirectoryService.split(':')[0]
+            )
         }
     }
 }
