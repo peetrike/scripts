@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.1.0
+    .VERSION 1.2.0
     .GUID a3b444d6-9e92-4f51-a8dc-dbd5aa155eea
 
     .AUTHOR Jaanus Jõgisu
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.2.0] - 2022.05.12 - Added LeaveExisting parameter
         [1.1.0] - 2022.05.12 - Changed alternate certificate mapping to use
                                SerialNumber instead of Subject, by default
         [1.0.3] - 2021.12.31 - moved script to Github
@@ -89,7 +90,10 @@ param (
     $IdProperty = 'pager',
         [switch]
         # Use Subject reference instead of SerialNumber reference.
-    $UseSubject
+    $UseSubject,
+        [switch]
+        # if there are existing mappings, leave them intact
+    $LeaveExisting
 )
 
 begin {
@@ -150,7 +154,8 @@ process {
     $PNO = $userAccount.$IdProperty
     if (-not $PNO) {
         $ErrorProps = @{
-            Message = 'User: {0} - PNO value not found in attribute "{1}", skipping' -f $ADUser.Name, $IdProperty
+            Message = 'User: {0} - PNO value not found in attribute "{1}", skipping' -f
+                $UserPrincipalName, $IdProperty
         }
         Write-Warning @ErrorProps
     } else {
@@ -174,15 +179,15 @@ process {
             Where-Object { $_.DistinguishedName -match 'ou=Authentication,o=(Identity|Digital|Residence card)' }
 
         if ($CertList) {
-            if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Clear old Name Mappings')) {
-                Set-ADUser -Identity $userAccount -Clear $MappingAttribute @ConfirmProps
+            if (-not $LeaveExisting.IsPresent) {
+                Set-ADUser -Identity $userAccount -Clear $MappingAttribute
             }
 
             foreach ($UserCert in $CertList.Attributes.'usercertificate;binary') {
                 $cert = [Security.Cryptography.X509Certificates.X509Certificate2] $UserCert
                 Write-Verbose -Message ('Found certificate with subject: {0}' -f $Cert.Subject)
 
-                    # Active Directory ootab <I>.<S> ridasid teistpidi kui sertifikaadist lugedes
+                    # Certain fields, such as Issuer, Subject, and SerialNumber, are reported in a "forward" format
                     $issuer = ConvertTo-ReversePath $cert.Issuer
                     $altSecurityIdentity = 'X509:<I>{0}' -f $issuer
                     if ($UseSubject.IsPresent) {
@@ -194,10 +199,11 @@ process {
                     }
 
                 if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Add Name Mapping')) {
-                        # Määrame AD kasutaja Name Mappings väljale saadud väärtuse
-                    Set-ADUser -Identity $userAccount  @ConfirmProps -Add @{
+                    Set-ADUser -Identity $userAccount @ConfirmProps -Add @{
                         $MappingAttribute = $altSecurityIdentity
                     }
+
+                        # Output the reference for changed object
                     New-Object -TypeName PSCustomObject -Property @{
                         UPN      = $UserPrincipalName
                         PNO      = $PNO
