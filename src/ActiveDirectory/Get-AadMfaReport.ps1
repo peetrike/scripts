@@ -2,7 +2,7 @@
 #Requires -Modules MSOnline, telia.savedcredential
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.3] - 2022.05.16 - Added other (non-default) MFA methods to report.
         [1.0.2] - 2021.12.31 - Moved script to Github.
         [1.0.1] - 2021.06.07 - Remove redundant module dependency.
         [1.0.0] - 2021.06.07 - Remove certificate-based authentication.
@@ -120,10 +121,13 @@ $UserList = Get-MsolUser -EnabledFilter EnabledOnly -All |
         foreach ($p in $PropertyList) { $UserProps.$p = $User.$p }
         $UserMfa = if ($User.StrongAuthenticationRequirements.State) {
             $User.StrongAuthenticationRequirements.State
-        } else { "Disabled" }
+        } else { 'Disabled' }
         if ($MfaStatus -in 'All', $UserMfa) {
             $UserProps.MfaStatus = $UserMfa
             $UserProps.DefaultMfa = ($User.StrongAuthenticationMethods | Where-Object IsDefault).MethodType
+            $UserProps.OtherMfa = (
+                $User.StrongAuthenticationMethods | Where-Object { -not $_.IsDefault }
+            ).MethodType -join ','
             [pscustomobject] $UserProps
         }
     }
