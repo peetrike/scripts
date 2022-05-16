@@ -71,7 +71,7 @@ param (
         )]
         [ValidateNotNullOrEmpty()]
         [Alias('AppId')]
-        # Application ID to use for autenthication
+        # Application ID to use for authentication
         [guid]
     $ApplicationId,
 
