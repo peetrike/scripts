@@ -1,5 +1,5 @@
 #Requires -Version 3.0
-#Requires -Modules AzureAdPreview
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports
 
 <#PSScriptInfo
     .VERSION 1.0.2
@@ -16,11 +16,12 @@
     .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
-    .EXTERNALMODULEDEPENDENCIES AzureAdPreview
+    .EXTERNALMODULEDEPENDENCIES Microsoft.Graph.Authentication, Microsoft.Graph.Reports
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
         [1.0.2] - 2021.12.31 - move script to Github
         [1.0.1] - 2021.03.25 - Add verbose message to report generation
         [1.0.0] - 2021.01.21 - Initial Release
@@ -66,11 +67,12 @@
 #>
 
 [CmdletBinding(
-    DefaultParameterSetName = 'Config'
+    DefaultParameterSetName = 'Credential'
 )]
 param (
     #region ParameterSet Config
         [parameter(
+            Mandatory,
             ParameterSetName = 'Config'
         )]
         [ValidateScript( {
@@ -109,7 +111,6 @@ param (
 
     #region ParameterSet Credential
             [Parameter(
-                Mandatory,
                 ParameterSetName = 'Credential'
             )]
             [ValidateNotNull()]
@@ -153,10 +154,12 @@ param (
     $PassThru
 )
 
-try {
-    $ConnectionInfo = Get-AzureADCurrentSessionInfo -ErrorAction Stop
-    Write-Verbose -Message ('Using previous connection to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
-} catch {
+$ConnectionInfo = Get-MgContext
+if ($ConnectionInfo.Scopes -match 'AuditLog') {
+    Write-Verbose -Message (
+        'Using existing connection to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account
+    )
+} else {
     if ($PSCmdlet.ParameterSetName -like 'Config') {
         Write-Verbose -Message ('Loading config file: {0}' -f $ConfigPath)
         $config = Get-Content -Path $ConfigPath | ConvertFrom-Json
@@ -164,18 +167,21 @@ try {
         $ApplicationId = $config.ApplicationId
         $CertificateThumbPrint = $config.CertificateThumbPrint
     }
-    $connectionParams = if ($Credential) {
-        @{
-            Credential = $Credential
+    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Credential') {
+        if ($Credential) {
+            @{
+                Credential = $Credential
+            }
         }
     } else {
         @{
             TenantId              = $TenantId.Guid
-            ApplicationId         = $ApplicationId.Guid
+            ClientId              = $ApplicationId.Guid
             CertificateThumbprint = $CertificateThumbPrint
         }
     }
-    $ConnectionInfo = Connect-AzureAD @connectionParams
+    $null = Connect-MgGraph @connectionParams -Scopes AuditLog.Read.All
+    $ConnectionInfo = Get-MgContext
     Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
 }
 
@@ -209,7 +215,7 @@ if ($Filter) {
 }
 if ($First) {
     $RequestProps.Top = $First
-    $RequestProps.All = $false
+    $RequestProps.Remove('All')
 }
 
 $ExportProperties = @(
@@ -221,21 +227,19 @@ $ExportProperties = @(
     'ClientAppUsed'
 )
 
-$SignInEvents = foreach ($event in Get-AzureADAuditSignInLogs @RequestProps) {
-    $EventProps = @{}
+$SignInEvents = foreach ($event in Get-MgAuditLogSignIn @RequestProps) {
+    $EventProps = @{
+        CreatedDateTime = [datetime]$event.CreatedDateTime
+        ErrorCode       = $event.Status.ErrorCode
+        ErrorDetails    = $event.Status.FailureReason
+        OperatingSystem = $event.DeviceDetail.OperatingSystem
+        Browser         = $event.DeviceDetail.Browser
+        DeviceName      = $event.DeviceDetail.DisplayName
+        Location        = $event.Location.CountryOrRegion
+    }
     foreach ($p in $ExportProperties) {
         $EventProps.$p = $event.$p
     }
-    $EventProps.CreatedDateTime = [datetime]$event.CreatedDateTime
-
-    $EventProps.ErrorCode = $event.Status.ErrorCode
-    $EventProps.ErrorDetails = $event.Status.FailureReason
-
-    $EventProps.OperatingSystem = $event.DeviceDetail.OperatingSystem
-    $EventProps.Browser = $event.DeviceDetail.Browser
-    $EventProps.DeviceName = $event.DeviceDetail.DisplayName
-
-    $EventProps.Location = $event.Location.CountryOrRegion
     [pscustomobject] $EventProps
 }
 
@@ -254,16 +258,15 @@ if ($Latest.IsPresent) {
 if ($PassThru.IsPresent) {
     $SignInEvents
 } else {
-    $CsvFileName = if ($ConnectionInfo.TenantDomain) {
-        $ConnectionInfo.TenantDomain
-    } else {
-        $ConnectionInfo.TenantId.Guid
-    }
+    $CsvFileName = $ConnectionInfo.TenantId + '.csv'
     $CsvProps = @{
         UseCulture        = $true
-        Encoding          = 'Default'
+        Encoding          = 'utf8'
         NoTypeInformation = $true
-        Path              = Join-Path -Path $ReportPath -ChildPath ($CsvFileName + '.csv')
+        Path              = Join-Path -Path $ReportPath -ChildPath $CsvFileName
+    }
+    if ($PSVersionTable.PSVersion.Major -gt 5) {
+        $CsvProps.Encoding = 'utf8BOM'
     }
 
     Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)

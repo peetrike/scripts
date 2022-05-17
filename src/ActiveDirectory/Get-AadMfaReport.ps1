@@ -1,8 +1,8 @@
 #Requires -Version 5.1
-#Requires -Modules MSOnline, telia.savedcredential
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
 
 <#PSScriptInfo
-    .VERSION 1.0.3
+    .VERSION 2.0.0
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
@@ -15,11 +15,12 @@
     .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
-    .EXTERNALMODULEDEPENDENCIES MSOnline
+    .EXTERNALMODULEDEPENDENCIES Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
         [1.0.3] - 2022.05.16 - Added other (non-default) MFA methods to report.
         [1.0.2] - 2021.12.31 - Moved script to Github.
         [1.0.1] - 2021.06.07 - Remove redundant module dependency.
@@ -54,20 +55,64 @@
         Script tries to avoid Azure AD Premium license dependency.
 
     .LINK
-        https://docs.microsoft.com/azure/active-directory/authentication/howto-mfa-reporting
+        https://docs.microsoft.com/graph/api/userregistrationdetails
 #>
 
 [CmdletBinding(
-    DefaultParameterSetName='Config'
+    DefaultParameterSetName = 'Credential'
 )]
 [OutputType([PSCustomObject])]
 
 param (
-        [ValidateNotNull()]
-        [PSCredential]
-        [Management.Automation.Credential()]
-        # Specifies the user account credentials to use when performing this task.
-    $Credential,
+    #region ParameterSet Config
+        [parameter(
+            Mandatory,
+            ParameterSetName = 'Config'
+        )]
+        [ValidateScript( {
+            if (Test-Path -Path $_) { $true }
+            else { throw 'Config file not found' }
+        })]
+        [PSDefaultValue(Help = '<scriptname>.json in the same folder as script')]
+        [string]
+        # Specifies config file path to be loaded
+    $ConfigPath = (Join-Path -Path $PSScriptRoot -ChildPath ((Get-Item $PSCommandPath).BaseName + '.json')),
+    #endregion
+
+    #region ParameterSet Application
+        [parameter(
+            Mandatory,
+            ParameterSetName = 'Application'
+        )]
+        [guid]
+        # Specifies Azure AD application ID of the service principal for authentication
+    $ApplicationId,
+        [parameter(
+            Mandatory,
+            ParameterSetName = 'Application'
+        )]
+        [guid]
+        # Specifies Azure AD Tenant Id to connect with.
+    $TenantId,
+        [parameter(
+            Mandatory,
+            ParameterSetName = 'Application'
+        )]
+        [string]
+        # Specifies certificate thumbprint of a X.509 certificate to use for authentication.
+    $CertificateThumbPrint,
+    #endregion
+
+    #region ParameterSet Credential
+            [Parameter(
+                ParameterSetName = 'Credential'
+            )]
+            [ValidateNotNull()]
+            [System.Management.Automation.PSCredential]
+            [System.Management.Automation.Credential()]
+            # Specifies the user account credentials to use when performing this task.
+        $Credential,
+    #endregion
 
         [ValidateScript( {
             Test-Path -Path $_ -PathType Container
@@ -83,67 +128,111 @@ param (
         [ValidateSet(
             'All',
             'Disabled',
-            'Enabled',
-            'Enforced'
+            'Enabled'
         )]
         [string]
-        # specifies that only users with given MFA status should be returned.
-    $MfaStatus = 'All'
+        # Specifies that only users with given MFA status should be returned.
+    $MfaStatus = 'All',
+        [string]
+        # Specifies string that is used to separate authentication methods.
+    $MfaListSeparator = "`n"
 )
 
-try {
-    $CompanyDetails = Get-MsolCompanyInformation -ErrorAction Stop
-} catch {
-    if (-not $Credential) {
-        $Credential = Get-SavedCredential -FileName (Get-Item $PSCommandPath).BaseName
+$ConnectionInfo = Get-MgContext
+if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
+    Write-Verbose -Message (
+        'Using existing connection to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account
+    )
+} else {
+    if ($PSCmdlet.ParameterSetName -like 'Config') {
+        Write-Verbose -Message ('Loading config file: {0}' -f $ConfigPath)
+        $config = Get-Content -Path $ConfigPath | ConvertFrom-Json
+        $TenantId = $config.TenantId
+        $ApplicationId = $config.ApplicationId
+        $CertificateThumbPrint = $config.CertificateThumbPrint
     }
-    if (-not $Credential) {
-        $Credential = Get-Credential -Message 'Enter credential for Azure AD Connection' -ErrorAction Stop
+    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Credential') {
+        if ($Credential) {
+            @{
+                Credential = $Credential
+            }
+        }
+    } else {
+        @{
+            TenantId              = $TenantId.Guid
+            ClientId              = $ApplicationId.Guid
+            CertificateThumbprint = $CertificateThumbPrint
+        }
     }
-    Write-Verbose -Message ('Using credential: {0}' -f $Credential.UserName)
-    Connect-MsolService -Credential $Credential -ErrorAction Stop
-    $CompanyDetails = Get-MsolCompanyInformation
+    $null = Connect-MgGraph @connectionParams -Scopes UserAuthenticationMethod.Read.All
+    $ConnectionInfo = Get-MgContext
+    Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
+}
+
+if ((Get-MgProfile).Name -like 'v1.0') {
+    # switch to Beta endpoint
+    Select-MgProfile -Name beta
 }
 
 $PropertyList = @(
-    'DisplayName'
-    'UserPrincipalName'
-    'LastDirSyncTime'
-    'IsLicensed'
+    'assignedLicenses'
+    'companyName'
+    'department'
+    'displayName'
+    'id'
+    'onPremisesLastSyncDateTime'
+    'userPrincipalName'
 )
 
-Write-Verbose -Message ('Connected to tenant: {0}' -f $CompanyDetails.InitialDomain)
-$UserList = Get-MsolUser -EnabledFilter EnabledOnly -All |
-    Where-Object UserType -Like 'Member' |
-    ForEach-Object {
-        $User = $_
-        $UserProps = [ordered] @{}
-        foreach ($p in $PropertyList) { $UserProps.$p = $User.$p }
-        $UserMfa = if ($User.StrongAuthenticationRequirements.State) {
-            $User.StrongAuthenticationRequirements.State
-        } else { 'Disabled' }
-        if ($MfaStatus -in 'All', $UserMfa) {
-            $UserProps.MfaStatus = $UserMfa
-            $UserProps.DefaultMfa = ($User.StrongAuthenticationMethods | Where-Object IsDefault).MethodType
-            $UserProps.OtherMfa = (
-                $User.StrongAuthenticationMethods | Where-Object { -not $_.IsDefault }
-            ).MethodType -join ','
-            [pscustomobject] $UserProps
-        }
-    }
+$UserFilter = "accountEnabled eq true and userType eq 'Member'"
 
-if ($PassThru.IsPresent) {
-    $UserList
-} else {
-    $CsvFileName = $CompanyDetails.InitialDomain + '-MFA'
+if (-not $PassThru.IsPresent) {
+    $CsvFileName = $ConnectionInfo.TenantId + '-MFA.csv'
     $CsvProps = @{
         UseCulture        = $true
-        Encoding          = 'utf8'
+        Encoding          = 'UTF8'
         NoTypeInformation = $true
-        Path              = Join-Path -Path $ReportPath -ChildPath ($CsvFileName + '.csv')
+        Path              = Join-Path -Path $ReportPath -ChildPath $CsvFileName
+        Append            = $true
+    }
+    if ($PSVersionTable.PSVersion.Major -gt 5) {
+        $CsvProps.Encoding = 'utf8BOM'
     }
 
     Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
-    $UserList |
-        Export-Csv @CsvProps
+    if (Test-Path -Path $CsvProps.Path -PathType Leaf ) {
+        Remove-Item -Path $CsvProps.Path
+    }
 }
+
+Get-MgUser -Filter $UserFilter -Property ($PropertyList -join ',') |
+    ForEach-Object {
+        $User = $_
+        Write-Verbose -Message ('Processing user: {0}' -f $user.DisplayName)
+        $UserProps = [ordered] @{}
+        switch ($PropertyList) {
+            'assignedLicenses' {
+                $UserProps.IsLicensed = $User.AssignedLicenses.Count -gt 0
+            }
+            'id' {}
+            default {
+                $UserProps.$_ = $User.$_
+            }
+        }
+        $AuthenticationMethod =
+            Get-MgReportAuthenticationMethodUserRegistrationDetail -UserRegistrationDetailsId $User.Id
+
+        $UserMfa = @('Disabled', 'Enabled')[$AuthenticationMethod.IsMfaRegistered]
+        if ($MfaStatus -in 'All', $UserMfa) {
+            $UserProps.MfaStatus = $UserMfa
+            $UserProps.MfaList = $AuthenticationMethod.MethodsRegistered -join $MfaListSeparator
+            [PSCustomObject] $UserProps
+        }
+    } |
+    ForEach-Object {
+        if ($PassThru.IsPresent) {
+            $_
+        } else {
+            $_ | Export-Csv @CsvProps
+        }
+    }
