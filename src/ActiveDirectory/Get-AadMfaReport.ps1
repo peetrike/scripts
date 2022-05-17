@@ -182,14 +182,6 @@ $PropertyList = @(
     'userPrincipalName'
 )
 
-<# $StrongAuthMethod = @(
-    'fido2'
-    'phone'
-    'passwordlessMicrosoftAuthenticator'
-    'microsoftAuthenticator'
-    'windowsHelloForBusiness'
-)
- #>
 $UserFilter = "accountEnabled eq true and userType eq 'Member'"
 
 if (-not $PassThru.IsPresent) {
@@ -208,7 +200,7 @@ if (-not $PassThru.IsPresent) {
     }
 }
 
-<# $UserList =  #>Get-MgUser -Filter $UserFilter -Property ($PropertyList -join ',') |
+Get-MgUser -Filter $UserFilter -Property ($PropertyList -join ',') |
     ForEach-Object {
         $User = $_
         Write-Verbose -Message ('Processing user: {0}' -f $user.DisplayName)
@@ -224,47 +216,6 @@ if (-not $PassThru.IsPresent) {
         }
         $AuthenticationMethod =
             Get-MgReportAuthenticationMethodUserRegistrationDetail -UserRegistrationDetailsId $User.Id
-            <# foreach ($method in Get-MgUserAuthenticationMethod -UserId $user.UserPrincipalName) {
-                $MethodName = $method.AdditionalProperties['@odata.type'].Split('.')[-1] -replace 'AuthenticationMethod'
-                $MethodProps = switch ($MethodName) {
-                    'phone' {
-                        @{
-                            Method  = $MethodName
-                            Details = $method.AdditionalProperties['phoneType', 'phoneNumber'] -join ' '
-                        }
-                    }
-                    'fido2' {
-                        @{
-                            Method  = $MethodName
-                            Details = $method.AdditionalProperties['model']
-                        }
-                    }
-                    'email' {
-                        @{
-                            Method  = $MethodName
-                            Details = $method.AdditionalProperties['emailAddress']
-                        }
-                    }
-                    'temporaryAccessPass' {
-                        @{
-                            Method  = $MethodName
-                            Details = $method.AdditionalProperties['lifetimeInMinutes']
-                        }
-                    }
-                    Default {
-                        @{
-                            Method  = $MethodName
-                            Details = $method.AdditionalProperties['displayName']
-                        }
-                    }
-                }
-                $MethodProps.MfaStatus = if ($MethodName -in $StrongAuthMethod) {
-                    'Strong'
-                } elseif ($MethodName -ne 'password') {
-                    'Weak'
-                }
-                [PSCustomObject] $MethodProps
-        } #>
 
         $UserMfa = @('Disabled', 'Enabled')[$AuthenticationMethod.IsMfaRegistered]
         if ($MfaStatus -in 'All', $UserMfa) {
@@ -280,19 +231,3 @@ if (-not $PassThru.IsPresent) {
             $_ | Export-Csv @CsvProps
         }
     }
-
-<# if ($PassThru.IsPresent) {
-    $UserList
-} else {
-    $CsvFileName = $CompanyDetails.InitialDomain + '-MFA'
-    $CsvProps = @{
-        UseCulture        = $true
-        Encoding          = 'utf8'
-        NoTypeInformation = $true
-        Path              = Join-Path -Path $ReportPath -ChildPath ($CsvFileName + '.csv')
-    }
-
-    Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
-    $UserList |
-        Export-Csv @CsvProps
-} #>
