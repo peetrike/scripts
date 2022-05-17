@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Identity.SignIns, Microsoft.Graph.Users
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
 
 <#PSScriptInfo
     .VERSION 2.0.0
@@ -177,19 +177,19 @@ $PropertyList = @(
     'companyName'
     'department'
     'displayName'
-    #'id'
+    'id'
     'onPremisesLastSyncDateTime'
     'userPrincipalName'
 )
 
-$StrongAuthMethod = @(
+<# $StrongAuthMethod = @(
     'fido2'
     'phone'
     'passwordlessMicrosoftAuthenticator'
     'microsoftAuthenticator'
     'windowsHelloForBusiness'
 )
-
+ #>
 $UserFilter = "accountEnabled eq true and userType eq 'Member'"
 
 $CsvFileName = $ConnectionInfo.TenantId + '-MFA'
@@ -213,12 +213,14 @@ Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
             'assignedLicenses' {
                 $UserProps.IsLicensed = $User.AssignedLicenses.Count -gt 0
             }
+            'id' {}
             default {
                 $UserProps.$_ = $User.$_
             }
         }
         $AuthenticationMethod =
-            foreach ($method in Get-MgUserAuthenticationMethod -UserId $user.UserPrincipalName) {
+            Get-MgReportAuthenticationMethodUserRegistrationDetail -UserRegistrationDetailsId $User.Id
+            <# foreach ($method in Get-MgUserAuthenticationMethod -UserId $user.UserPrincipalName) {
                 $MethodName = $method.AdditionalProperties['@odata.type'].Split('.')[-1] -replace 'AuthenticationMethod'
                 $MethodProps = switch ($MethodName) {
                     'phone' {
@@ -258,16 +260,12 @@ Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
                     'Weak'
                 }
                 [PSCustomObject] $MethodProps
-        }
+        } #>
 
-        $UserMfa = if ($AuthenticationMethod.MfaStatus -match 'Strong') {
-            'Strong'
-        } elseif ($AuthenticationMethod.MfaStatus -match 'Weak') {
-            'Weak'
-        } else { 'Disabled' }
+        $UserMfa = @('Disabled', 'Enabled')[$AuthenticationMethod.IsMfaRegistered]
         if ($MfaStatus -in 'All', $UserMfa) {
             $UserProps.MfaStatus = $UserMfa
-            $UserProps.MfaList = ($AuthenticationMethod.Method | Select-Object -Unique) -join ' '
+            $UserProps.MfaList = $AuthenticationMethod.MethodsRegistered -join ','
             [PSCustomObject] $UserProps
         }
     } |
@@ -275,8 +273,7 @@ Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
         if ($PassThru.IsPresent) {
             $_
         } else {
-            $_ |
-                Export-Csv @CsvProps
+            $_ | Export-Csv @CsvProps
         }
     }
 
