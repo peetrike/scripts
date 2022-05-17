@@ -131,8 +131,11 @@ param (
             'Enabled'
         )]
         [string]
-        # specifies that only users with given MFA status should be returned.
-    $MfaStatus = 'All'
+        # Specifies that only users with given MFA status should be returned.
+    $MfaStatus = 'All',
+        [string]
+        # Specifies string that is used to separate authentication methods.
+    $MfaListSeparator = "`n"
 )
 
 $ConnectionInfo = Get-MgContext
@@ -222,7 +225,7 @@ Get-MgUser -Filter $UserFilter -Property ($PropertyList -join ',') |
         $UserMfa = @('Disabled', 'Enabled')[$AuthenticationMethod.IsMfaRegistered]
         if ($MfaStatus -in 'All', $UserMfa) {
             $UserProps.MfaStatus = $UserMfa
-            $UserProps.MfaList = $AuthenticationMethod.MethodsRegistered -join "`n"
+            $UserProps.MfaList = $AuthenticationMethod.MethodsRegistered -join $MfaListSeparator
             [PSCustomObject] $UserProps
         }
     } |
