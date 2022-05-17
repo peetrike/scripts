@@ -127,7 +127,7 @@ begin {
         }
     }
     $SelectProperties = (
-        $AdProperties | Select-Object -First ($AdProperties.count -1)
+        $AdProperties | Select-Object -First ($AdProperties.Count - 1)
     ) + 'UserPrincipalName', $expiryDate
 }
 
