@@ -55,7 +55,7 @@
         Script tries to avoid Azure AD Premium license dependency.
 
     .LINK
-        https://docs.microsoft.com/azure/active-directory/authentication/howto-mfa-reporting
+        https://docs.microsoft.com/graph/api/userregistrationdetails
 #>
 
 [CmdletBinding(
