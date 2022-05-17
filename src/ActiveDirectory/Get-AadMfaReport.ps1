@@ -128,8 +128,7 @@ param (
         [ValidateSet(
             'All',
             'Disabled',
-            'Enabled',
-            'Enforced'
+            'Enabled'
         )]
         [string]
         # specifies that only users with given MFA status should be returned.
@@ -185,13 +184,16 @@ $PropertyList = @(
 $UserFilter = "accountEnabled eq true and userType eq 'Member'"
 
 if (-not $PassThru.IsPresent) {
-    $CsvFileName = $ConnectionInfo.TenantId + '-MFA'
+    $CsvFileName = $ConnectionInfo.TenantId + '-MFA.csv'
     $CsvProps = @{
         UseCulture        = $true
-        Encoding          = 'utf8'
+        Encoding          = 'UTF8'
         NoTypeInformation = $true
-        Path              = Join-Path -Path $ReportPath -ChildPath ($CsvFileName + '.csv')
+        Path              = Join-Path -Path $ReportPath -ChildPath $CsvFileName
         Append            = $true
+    }
+    if ($PSVersionTable.PSVersion.Major -gt 5) {
+        $CsvProps.Encoding = 'utf8BOM'
     }
 
     Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
@@ -220,7 +222,7 @@ Get-MgUser -Filter $UserFilter -Property ($PropertyList -join ',') |
         $UserMfa = @('Disabled', 'Enabled')[$AuthenticationMethod.IsMfaRegistered]
         if ($MfaStatus -in 'All', $UserMfa) {
             $UserProps.MfaStatus = $UserMfa
-            $UserProps.MfaList = $AuthenticationMethod.MethodsRegistered -join ','
+            $UserProps.MfaList = $AuthenticationMethod.MethodsRegistered -join "`n"
             [PSCustomObject] $UserProps
         }
     } |
