@@ -15,12 +15,12 @@
     .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
-    .EXTERNALMODULEDEPENDENCIES MSOnline
+    .EXTERNALMODULEDEPENDENCIES Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [2.0.0] - 2022.05.16 - Script rewritten to use Microsoft.Graph modules
+        [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
         [1.0.3] - 2022.05.16 - Added other (non-default) MFA methods to report.
         [1.0.2] - 2021.12.31 - Moved script to Github.
         [1.0.1] - 2021.06.07 - Remove redundant module dependency.
@@ -192,17 +192,21 @@ $PropertyList = @(
  #>
 $UserFilter = "accountEnabled eq true and userType eq 'Member'"
 
-$CsvFileName = $ConnectionInfo.TenantId + '-MFA'
-$CsvProps = @{
-    UseCulture        = $true
-    Encoding          = 'utf8'
-    NoTypeInformation = $true
-    Path              = Join-Path -Path $ReportPath -ChildPath ($CsvFileName + '.csv')
-    Append            = $true
+if (-not $PassThru.IsPresent) {
+    $CsvFileName = $ConnectionInfo.TenantId + '-MFA'
+    $CsvProps = @{
+        UseCulture        = $true
+        Encoding          = 'utf8'
+        NoTypeInformation = $true
+        Path              = Join-Path -Path $ReportPath -ChildPath ($CsvFileName + '.csv')
+        Append            = $true
+    }
+
+    Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
+    if (Test-Path -Path $CsvProps.Path -PathType Leaf ) {
+        Remove-Item -Path $CsvProps.Path
+    }
 }
-
-Write-Verbose -Message ('Saving Report to: {0}' -f $CsvProps.Path)
-
 
 <# $UserList =  #>Get-MgUser -Filter $UserFilter -Property ($PropertyList -join ',') |
     ForEach-Object {
