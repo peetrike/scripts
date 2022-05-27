@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
 
     .GUID aeb78b6a-0f41-4d74-b914-4f4c26f31acb
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.3] - 2022.05.27 - Changed obtaining named properties to use XPath
         [1.0.2] - 2021.12.31 - Moved script to Github
         [1.0.1] - 2020.11.04 - change date conversion
         [1.0.0] - 2020.11.03 - Initial Release
@@ -107,26 +108,21 @@ $xPathFilter = '*[System[(' + (
 if ($After -or $Before) {
     $xPathFilter += ' and TimeCreated[@SystemTime'
     if ($After) {
-        $xPathFilter += "&gt;='{0}'" -f (stringTime $After)
+        $xPathFilter += " >= '{0}'" -f (stringTime $After)
         if ($Before) { $xPathFilter += ' and @SystemTime' }
     }
     if ($Before) {
-        $xPathFilter += "&lt;='{0}'" -f (stringTime $Before)
+        $xPathFilter += " <= '{0}'" -f (stringTime $Before)
     }
     $xPathFilter += ']'
 }
 $xPathFilter += ']]'
 
 Write-Debug -Message ("Using filter:`n{0}" -f $xPathFilter)
-$xmlFilter = "<QueryList>
-  <Query Id='0' Path='Security'>
-    <Select Path='Security'>{0}</Select>
-  </Query>
-</QueryList>" -f $xPathFilter
 
-foreach ($currentEvent in Get-WinEvent -FilterXml $xmlFilter) {
-    $XmlEvent = [xml]$currentEvent.ToXml()
-    $LogonType = ($xmlEvent.Event.EventData.Data | Where-Object { $_.Name -like 'LogonType' }).'#text'
+foreach ($currentEvent in Get-WinEvent -LogName Security -FilterXPath $xPathFilter) {
+    $XmlEvent = [xml] $currentEvent.ToXml()
+    $LogonType = $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
     $eventProps = @{
         TimeCreated = $currentEvent.TimeCreated
         EventType   = ($EventList | Where-Object { $_.Id -eq $currentEvent.Id }).Label
