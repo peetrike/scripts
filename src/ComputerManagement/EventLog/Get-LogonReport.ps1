@@ -131,12 +131,9 @@ foreach ($currentEvent in Get-WinEvent -FilterXml $xmlFilter) {
         TimeCreated = $currentEvent.TimeCreated
         EventType   = ($EventList | Where-Object { $_.Id -eq $currentEvent.Id }).Label
         Id          = $currentEvent.Id
-        User        = '{1}\{0}' -f (
-            $XmlEvent.Event.EventData.Data | Where-Object { $_.Name -like 'TargetUserName' }
-        ).'#text', (
-            $XmlEvent.Event.EventData.Data | Where-Object { $_.Name -like 'TargetDomainName' }
-        ).'#text'
-        SourceIp    = ($xmlEvent.Event.EventData.Data | Where-Object { $_.Name -like 'IpAddress' }).'#text'
+        User        = '{1}\{0}' -f $XmlEvent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText,
+            $XmlEvent.SelectSingleNode('//*[@Name = "TargetDomainName"]').InnerText
+        SourceIp    = $xmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
         LogonType   = switch ($LogonType) {
             2 { 'Interactive - local logon' }
             3 { 'Network' }
