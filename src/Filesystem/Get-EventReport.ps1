@@ -25,8 +25,8 @@ $AccountName = @{
 $ObjectName = @{Name = 'ObjectName'; e = { $_.Properties[6].Value } }
 # $ProcessId = @{Name = 'ProcessId'; e={$_.Properties[10].Value}}
 $ProcessName = @{Name = 'ProcessName'; e = { $_.Properties[11].Value } }
-$AccessList =  @{Name = 'AccessList'; e = { $_.Properties[8].Value.Trim(' ') } }
-$AccessMask =  @{
+$AccessList = @{Name = 'AccessList'; e = { $_.Properties[8].Value.Trim(' ') } }
+$AccessMask = @{
     Name       = 'AccessMask'
     Expression = {
         switch ($_.Properties[9].Value) {
