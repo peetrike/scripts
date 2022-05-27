@@ -1,11 +1,11 @@
 ﻿<#
-    .Description
+    .DESCRIPTION
         This script reports the various .NET Framework versions installed on the local computer.
-    .Notes
-	    Author		: Martin Schvartzman
+    .NOTES
+        Author      : Martin Schvartzman
         Modified by : Peter Wawa
-    .Link
-        Reference   : https://docs.microsoft.com/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
+    .LINK
+        https://docs.microsoft.com/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
 #>
 
 [CmdletBinding()]
@@ -31,7 +31,7 @@ Function Get-NetFrameworkVersion {
         $Type = 'Full'
     )
 
-    $dotNetRegistry  = 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP'
+    $dotNetRegistry = 'HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP'
     $dotNet4Registry = Join-Path -Path $dotNetRegistry -ChildPath 'v4'
     $InstalledComponents = 'HKLM:\SOFTWARE\Microsoft\Active Setup\Installed Components'
 
@@ -56,7 +56,6 @@ Function Get-NetFrameworkVersion {
         '461814' = @{ Version = [Version]'4.7.2' ; Comment = '(NON Windows 10 1803)' }
         '528040' = @{ Version = [Version]'4.8.0' ; Comment = '(Windows 10 1903/1909)' }
         '528049' = @{ Version = [Version]'4.8.0' ; Comment = '(Non Windows 10 1903 or newer)' }
-        #'528209' = @{ Version = [Version]'4.8.0' ; Comment = '(Windows 10 2004)'               }
         '528372' = @{ Version = [Version]'4.8.0' ; Comment = '(Windows 10 2004 or newer)' }
         '528449' = @{ Version = [Version]'4.8.0' ; Comment = '(Windows 11 / Server 2022)' }
     }
@@ -109,50 +108,6 @@ Function Get-NetFrameworkVersion {
                         }
                     }
                 }
-<#
-    $RegistryPrefix = "Registry::";
-#1.0 Original (on supported platforms except for Windows XP Media Center and Tablet PC)
-	Try {
-		IF (((Get-ItemProperty -ErrorAction Stop -Path ($RegistryPrefix + "HKEY_LOCAL_MACHINE\Software\Microsoft\Active Setup\Installed Components\{78705f0d-e8db-4b2d-8193-982bdda15ecd}") | SELECT -ExpandProperty "Version") -eq "1.0.3705.0")) {
-			Write-Host ".NET Framework 1.0";
-		}
-	} Catch {}
-
-#1.0 Service Pack 1 (on supported platforms except for Windows XP Media Center and Tablet PC)
-	Try {
-		IF (((Get-ItemProperty -ErrorAction Stop -Path ($RegistryPrefix + "HKEY_LOCAL_MACHINE\Software\Microsoft\Active Setup\Installed Components\{78705f0d-e8db-4b2d-8193-982bdda15ecd}") | SELECT -ExpandProperty "Version") -eq "1.0.3705.1")) {
-			Write-Host ".NET Framework 1.0 service pack 1";
-		}
-	} Catch {}
-
-#1.0 Service Pack 2 (on supported platforms except for Windows XP Media Center and Tablet PC)
-	Try {
-		IF (((Get-ItemProperty -ErrorAction Stop -Path ($RegistryPrefix + "HKEY_LOCAL_MACHINE\Software\Microsoft\Active Setup\Installed Components\{78705f0d-e8db-4b2d-8193-982bdda15ecd}") | SELECT -ExpandProperty "Version") -eq "1.0.3705.2")) {
-			Write-Host ".NET Framework 1.0 service pack 2";
-		}
-	} Catch {}
-
-#1.0 Service Pack 3 (on supported platforms except for Windows XP Media Center and Tablet PC)
-	Try {
-		IF (((Get-ItemProperty -ErrorAction Stop -Path ($RegistryPrefix + "HKEY_LOCAL_MACHINE\Software\Microsoft\Active Setup\Installed Components\{78705f0d-e8db-4b2d-8193-982bdda15ecd}") | SELECT -ExpandProperty "Version") -eq "1.0.3705.3")) {
-			Write-Host ".NET Framework 1.0 service pack 3";
-		}
-	} Catch {}
-
-#1.0 Service Pack 2 (shipped with Windows XP Media Center 2002/2004 and Tablet PC 2004)
-	Try {
-		IF (((Get-ItemProperty -ErrorAction Stop -Path ($RegistryPrefix + "HKEY_LOCAL_MACHINE\Software\Microsoft\Active Setup\Installed Components\{FDC11A6F-17D1-48f9-9EA3-9051954BAA24}") | SELECT -ExpandProperty "Version") -eq "1.0.3705.2")) {
-			Write-Host ".NET Framework 1.0 service pack 2";
-		}
-	} Catch {}
-
-#1.0 Service Pack 3 (shipped with Windows XP Media Center 2002/2004 and Tablet PC 2004)
-	Try {
-		IF (((Get-ItemProperty -ErrorAction Stop -Path ($RegistryPrefix + "HKEY_LOCAL_MACHINE\Software\Microsoft\Active Setup\Installed Components\{FDC11A6F-17D1-48f9-9EA3-9051954BAA24}") | SELECT -ExpandProperty "Version") -eq "1.0.3705.3")) {
-			Write-Host ".NET Framework 1.0 service pack 3";
-		}
-	} Catch {}
- #>
             }
             Default {
                 Get-ChildItem -Path $dotNetRegistry |
