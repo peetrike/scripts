@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.1
+    .VERSION 1.0.2
 
     .GUID 5a6d1359-df01-4607-aead-111495452518
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.2] - 2022.05.27 - Fix obtaining Session Name
         [1.0.1] - 2020.05.06 - Replace function Write-Log
         [1.0.0] - 2019.07.16 - Initial release
         [0.0.1] - 2019.07.15 - Started work
@@ -105,9 +106,9 @@ function Get-RdpUserSession {
     }
 
     $queryResults = query.exe user
-    $Header =$queryResults[0]
+    $Header = $queryResults[0]
     $starters = New-Object psobject -Property @{
-        SessionName = $Header.IndexOf("SESSIONAL")
+        SessionName = $Header.IndexOf('SESSIONNAME')
         State       = $Header.IndexOf('STATE')
         IdleTime    = $Header.IndexOf('IDLE TIME')
         LogonTime   = $Header.IndexOf('LOGON TIME')
