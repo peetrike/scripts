@@ -30,7 +30,7 @@
 
 <#
     .SYNOPSIS
-        logs off all disconnected user sessions
+        Logs off all disconnected user sessions
     .DESCRIPTION
         This script logs off all RDP sessions that are currently disconnected.
         Logged off users are written into log file.
@@ -103,29 +103,39 @@ function Get-RdpUserSession {
     $FilteredState = $State
     if ($State -like 'Disconnected') {
         $FilteredState = 'Disc'
+    } else {
+        Write-Verbose -Message 'No logged on user sessions exist'
     }
 
-    $queryResults = query.exe user
-    $Header = $queryResults[0]
-    $starters = New-Object psobject -Property @{
-        SessionName = $Header.IndexOf('SESSIONNAME')
-        State       = $Header.IndexOf('STATE')
-        IdleTime    = $Header.IndexOf('IDLE TIME')
-        LogonTime   = $Header.IndexOf('LOGON TIME')
+    $queryResults = query.exe user 2> $null
+    if ($queryResults) {
+        $Header = $queryResults[0]
+        $starters = New-Object psobject -Property @{
+            SessionName = $Header.IndexOf('SESSIONNAME')
+            State       = $Header.IndexOf('STATE')
+            IdleTime    = $Header.IndexOf('IDLE TIME')
+            LogonTime   = $Header.IndexOf('LOGON TIME')
+        }
     }
     foreach ($result in $queryResults | Select-Object -Skip 1) {
         $SessionState = $result.Substring($starters.State, $starters.IdleTime - $starters.State).trim()
         if ((-not $State) -or ($SessionState -like $FilteredState)) {
-            $SessionUserName = $result.Substring(1, $result.Trim().Indexof(" ")).TrimEnd()
-            Write-Verbose -Message ('Processing user {0}' -f $SessionUserName)
+            $SessionUserName = $result.Substring(1, $result.Trim().Indexof(' ')).TrimEnd()
+            Write-Verbose -Message ('Processing session {0}' -f $SessionUserName)
 
             $EndOfSessionName = $result.IndexOf(' ', $starters.SessionName)
             New-Object psobject -Property @{
-                SessionName = $result.Substring($starters.SessionName, $EndOfSessionName - $starters.SessionName)
+                SessionName = $result.Substring(
+                    $starters.SessionName, $EndOfSessionName - $starters.SessionName
+                )
                 Username    = $SessionUserName
-                ID          = $result.Substring($EndOfSessionName, $starters.State - $EndOfSessionName).trim() -as [int]
+                ID          = $result.Substring(
+                    $EndOfSessionName, $starters.State - $EndOfSessionName
+                ).trim() -as [int]
                 State       = $SessionState
-                IdleTime    = $result.Substring($starters.IdleTime, $starters.LogonTime - $starters.IdleTime).trim();
+                IdleTime    = $result.Substring(
+                    $starters.IdleTime, $starters.LogonTime - $starters.IdleTime
+                ).trim()
                 LogonTime   = [datetime]::Parse($result.Substring($starters.LogonTime))
             }
         }
@@ -140,8 +150,8 @@ if (-not $LogFilePath) {
 
 Write-Log -Message 'Disconnected Sessions CleanUp'
 Write-Log -Message '============================='
-foreach ($user in Get-RdpUserSession -State Disconnected ) {
-    Write-Log -Message ('Logging off user: {0}' -f $user.Username)
-    logoff.exe $user.ID
+foreach ($session in Get-RdpUserSession -State Disconnected ) {
+    Write-Log -Message ('Logging off user: {0}' -f $session.Username)
+    logoff.exe $session.ID
 }
 Write-Log -Message 'Finished' -AddEmptyLine
