@@ -20,7 +20,7 @@ param (
     $Type = 'Full'
 )
 
-Function Get-NetFrameworkVersion {
+function Get-NetFrameworkVersion {
     [CmdletBinding()]
     param (
             [ValidateRange(1, 4)]
@@ -126,4 +126,4 @@ Function Get-NetFrameworkVersion {
     }
 }
 
-Get-NETFrameworkVersion @PSBoundParameters
+Get-NetFrameworkVersion @PSBoundParameters
