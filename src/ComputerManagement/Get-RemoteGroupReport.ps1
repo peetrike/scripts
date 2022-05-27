@@ -41,31 +41,31 @@
         command line.  That appends current datetime to filename, ensuring
         unique filename for every script run.
     .EXAMPLE
-        PS C:\> Get-RemoteGroupReport.ps1 -ComputerName $env:COMPUTERNAME -Group Administrators
+        Get-RemoteGroupReport.ps1 -ComputerName $env:COMPUTERNAME -Group Administrators
 
         Connect to local computer and report the members of Administrators group
     .EXAMPLE
-        PS C:\> Get-Content computers.txt | Get-RemoteGroupReport.ps1 -Group Users -Credential 'domain\user'
+        Get-Content computers.txt | Get-RemoteGroupReport.ps1 -Group Users -Credential 'domain\user'
 
         Take computer names from computers.txt file and report members of group Users.
         Use 'domain\user' credential to connect to remote computers.
     .EXAMPLE
-        PS C:\> Get-RemoteGroupReport.ps1 -CN server1 -Group Users, Administrators -OutputType Multiple
+        Get-RemoteGroupReport.ps1 -CN server1 -Group Users, Administrators -OutputType Multiple
 
         Connect to remote computer and report the members in two groups into separate file for each group.
     .EXAMPLE
-        PS C:\> Get-RemoteGroupReport.ps1 -ComputerName server1 -Group Administrators -ReportFileNameTimeStamp
+        Get-RemoteGroupReport.ps1 -ComputerName server1 -Group Administrators -ReportFileNameTimeStamp
 
         Connect to remote computer and report the members of group Administrators.
         Have current datetime included in filename.
     .LINK
-        Get-LocalGroupMember - https://docs.microsoft.compowershell/module/Microsoft.PowerShell.LocalAccounts/Get-LocalGroupMember
+        Get-LocalGroupMember
     .LINK
-        net localgroup - https://docs.microsoft.com/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc725622(v=ws.11)
+        https://docs.microsoft.com/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/cc725622(v=ws.11)
 #>
 
 [CmdletBinding()]
-Param(
+param(
         [Parameter(
             Mandatory = $true,
             HelpMessage = 'Remote computer name(s) to connect',
@@ -91,7 +91,8 @@ Param(
     $Group,
         [ValidateSet('Single', 'Multiple')]
         [string]
-        # Specifies whether to create single report file or separate file for every group. Possible values are: Single, Multiple.
+        # Specifies whether to create single report file or separate file for every group.
+        # Possible values: Single, Multiple.
     $OutputType = 'Single',
         [switch]
         # Adds Timestamp to report file name.
@@ -320,9 +321,12 @@ end {
 
     $CsvProps = @{
         UseCulture        = $true
-        Encoding          = 'Default'
+        Encoding          = 'UTF8'
         NoTypeInformation = $true
         # Append            = $true
+    }
+    if ($PSVersionTable.PSVersion.Major -gt 5) {
+        $CsvProps.Encoding = 'utf8BOM'
     }
 
     if ($ReportFileNameTimeStamp) {
@@ -337,7 +341,7 @@ end {
                 Name       = 'GroupName'
                 Expression = { $name }
             }
-            $memberlist = foreach ($name in $Group) {
+            $memberList = foreach ($name in $Group) {
                 $ResultSet.$name |
                     Select-Object -Property $GroupName, *
             }
@@ -350,7 +354,9 @@ end {
         }
         'Multiple' {
             foreach ($name in $Group) {
-                $CsvName = '{0}{1}.csv' -f ($name.Split([io.path]::GetInvalidFileNameChars()) -join '_'), $FileTimeSuffix
+                $CsvName = '{0}{1}.csv' -f
+                    ($name.Split([io.path]::GetInvalidFileNameChars()) -join '_'),
+                    $FileTimeSuffix
                 $CsvProps.Path = Join-Path -Path $PWD -ChildPath $CsvName
 
                 $ResultSet.$name |
