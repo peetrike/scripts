@@ -27,11 +27,11 @@ if ($Restore.IsPresent) {
         Rename-Item $BackupPath -NewName $OriginalName
         Set-ItemProperty -Path $OriginalPath -Name '(default)' -Value ('URL:{0}' -f $originalName)
     } else {
-        Write-Warning -Message 'Nothing to restore, backup path does not exist'
+        Write-Verbose -Message 'Nothing to restore, backup path does not exist'
     }
 } elseif (Test-Path -Path $OriginalPath ) {
     Rename-Item -Path $OriginalPath -NewName $BackupName
     Set-ItemProperty -Path $BackupPath -Name '(default)' -Value ('URL:{0}' -f $BackupName)
 } else {
-    Write-Warning -Message 'Nothing to fix, protocol is not registered'
+    Write-Verbose -Message 'Nothing to fix, protocol is not registered'
 }
