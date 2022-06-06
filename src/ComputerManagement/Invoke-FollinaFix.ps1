@@ -20,7 +20,7 @@ $BackupPath = $RootPath + $BackupName
 try {
     $null = Get-PSDrive -Name $DriveName -ErrorAction Stop
 } catch {
-    $null = New-PSDrive -PSProvider registry -Root HKEY_CLASSES_ROOT -Name $DriveName
+    $null = New-PSDrive -PSProvider Registry -Root HKEY_CLASSES_ROOT -Name $DriveName
 }
 
 if ($Restore.IsPresent) {
