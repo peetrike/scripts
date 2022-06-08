@@ -2,7 +2,7 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
 
 <#PSScriptInfo
-    .VERSION 2.0.0
+    .VERSION 2.1.0
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.1.0] - 2022.06.08 - Replace parameter -Credential with -Interactive
         [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
         [1.0.3] - 2022.05.16 - Added other (non-default) MFA methods to report.
         [1.0.2] - 2021.12.31 - Moved script to Github.
@@ -38,9 +39,9 @@
         This script generates Azure AD users MFA status report.
 
     .EXAMPLE
-        Get-AadMfaReport -Credential admin@my.onmicorosft.com
+        Get-AadMfaReport -Interactive
 
-        Generate MFA report using provided credentials.
+        Generate MFA report using browser-based logon form.
 
     .EXAMPLE
         Get-AadMfaReport -PassThru -MfaStatus Enabled
@@ -105,15 +106,13 @@ param (
     $CertificateThumbPrint,
     #endregion
 
-    #region ParameterSet Credential
+    #region ParameterSet Interactive
             [Parameter(
-                ParameterSetName = 'Credential'
+                ParameterSetName = 'Interactive'
             )]
-            [ValidateNotNull()]
-            [System.Management.Automation.PSCredential]
-            [System.Management.Automation.Credential()]
+            [switch]
             # Specifies the user account credentials to use when performing this task.
-        $Credential,
+        $Interactive,
     #endregion
 
         [ValidateScript( {
@@ -153,10 +152,10 @@ if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
         $ApplicationId = $config.ApplicationId
         $CertificateThumbPrint = $config.CertificateThumbPrint
     }
-    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Credential') {
+    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Interactive') {
         if ($Credential) {
             @{
-                Credential = $Credential
+                Scopes = 'UserAuthenticationMethod.Read.All', 'AuditLog.Read.All'
             }
         }
     } else {
@@ -166,7 +165,7 @@ if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
             CertificateThumbprint = $CertificateThumbPrint
         }
     }
-    $null = Connect-MgGraph @connectionParams -Scopes UserAuthenticationMethod.Read.All
+    $null = Connect-MgGraph @connectionParams
     $ConnectionInfo = Get-MgContext
     Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
 }
