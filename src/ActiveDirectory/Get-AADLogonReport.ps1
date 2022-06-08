@@ -2,7 +2,7 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 2.1.0
 
     .GUID 6894168a-33aa-430b-b7c9-66cd749c51ab
 
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.1.0] - 2022.05.17 - Replace parameter -Credential with -Interactive
         [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
         [1.0.2] - 2021.12.31 - move script to Github
         [1.0.1] - 2021.03.25 - Add verbose message to report generation
@@ -56,9 +57,9 @@
         This example authenticates to Azure AD with provided service principal.
         The logon report will contain only successful logon events for Azure Portal application.
     .EXAMPLE
-        Get-AADLogonReport.ps1 -Credential me@company.onmicrosoft.com -After ([datetime]::Today)
+        Get-AADLogonReport.ps1 -Interactive -After ([datetime]::Today)
 
-        This example authenticates to Azure AD with provided credential.
+        This example authenticates to Azure AD using browser.
         The logon report will contain only logon events for today.
     .NOTES
         This script requires following Graph API permissions:
@@ -67,7 +68,7 @@
     .LINK
         https://docs.microsoft.com/graph/api/signin-list
     .LINK
-        Get-AzureADAuditSignInLogs
+        Get-MgAuditLogSignIn
 #>
 
 [CmdletBinding(
@@ -113,15 +114,14 @@ param (
     $CertificateThumbPrint,
     #endregion
 
-    #region ParameterSet Credential
-            [Parameter(
-                ParameterSetName = 'Credential'
-            )]
-            [ValidateNotNull()]
-            [System.Management.Automation.PSCredential]
-            [System.Management.Automation.Credential()]
-            # Specifies the user account credentials to use when performing this task.
-        $Credential,
+    #region ParameterSet Interactive
+        [parameter(
+            Mandatory,
+            ParameterSetName = 'Interactive'
+        )]
+        [switch]
+        # Performs interactive authentication, using browser-based logon form.
+    $Interactive,
     #endregion
 
         [datetime]
@@ -171,11 +171,9 @@ if ($ConnectionInfo.Scopes -match 'AuditLog') {
         $ApplicationId = $config.ApplicationId
         $CertificateThumbPrint = $config.CertificateThumbPrint
     }
-    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Credential') {
-        if ($Credential) {
-            @{
-                Credential = $Credential
-            }
+    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Interactive') {
+        @{
+            Scopes = 'AuditLog.Read.All', 'Directory.Read.All'
         }
     } else {
         @{
@@ -184,9 +182,33 @@ if ($ConnectionInfo.Scopes -match 'AuditLog') {
             CertificateThumbprint = $CertificateThumbPrint
         }
     }
-    $null = Connect-MgGraph @connectionParams -Scopes AuditLog.Read.All
+
+    $null = Connect-MgGraph @connectionParams # -Scopes AuditLog.Read.All
     $ConnectionInfo = Get-MgContext
     Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
+}
+
+function Add-Filter {
+    [CmdletBinding()]
+    param (
+            [parameter(
+                Mandatory,
+                ValueFromPipeline
+            )]
+            [AllowEmptyString()]
+            [string]
+        $Filter,
+            [string]
+        $Element
+    )
+
+    process {
+        if ($Filter) {
+            $Filter, $Element -join ' and '
+        } else {
+            $Element
+        }
+    }
 }
 
 if ($After) {
@@ -194,7 +216,7 @@ if ($After) {
 }
 
 if ($FilterAppId) {
-    $Filter = $Filter, ("appId eq '{0}'" -f $FilterAppId) -join ' and '
+    $Filter = Add-Filter -filter $Filter -Element ("appId eq '{0}'" -f $FilterAppId)
 }
 
 switch ($Include) {
@@ -206,7 +228,7 @@ switch ($Include) {
     }
 }
 if ($Equation) {
-    $Filter = $Filter, ('status/errorcode {0} 0' -f $Equation) -join ' and '
+    $Filter = Add-Filter -filter $Filter -Element ('status/errorcode {0} 0' -f $Equation)
 }
 
 Write-Verbose -Message ('Filter: {0}' -f $filter)
