@@ -60,6 +60,10 @@
 
         This example authenticates to Azure AD with provided credential.
         The logon report will contain only logon events for today.
+    .NOTES
+        This script requires following Graph API permissions:
+        * Directory.Read.All
+        * AuditLog.Read.All
     .LINK
         https://docs.microsoft.com/graph/api/signin-list
     .LINK

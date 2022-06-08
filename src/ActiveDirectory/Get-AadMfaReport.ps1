@@ -52,10 +52,12 @@
         The MFA report entries, if `-PassThru` parameter is used.
 
     .NOTES
-        Script tries to avoid Azure AD Premium license dependency.
+        This script requires following Graph API permissions:
+        * UserAuthenticationMethod.Read.All
+        * AuditLog.Read.All
 
     .LINK
-        https://docs.microsoft.com/graph/api/userregistrationdetails
+        https://docs.microsoft.com/graph/api/resources/userregistrationdetails
 #>
 
 [CmdletBinding(
