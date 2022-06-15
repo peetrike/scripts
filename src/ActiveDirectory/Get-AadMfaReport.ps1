@@ -2,12 +2,12 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
 
 <#PSScriptInfo
-    .VERSION 2.1.0
+    .VERSION 2.1.1
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2022.  All rights reserved.
 
     .TAGS Azure, ActiveDirectory, AD, user, MFA, report, PSEdition_Desktop, Windows
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.1.1] - 2022.06.15 - Add support for using certificate from computer store.
         [2.1.0] - 2022.06.08 - Replace parameter -Credential with -Interactive
         [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
         [1.0.3] - 2022.05.16 - Added other (non-default) MFA methods to report.
@@ -62,7 +63,7 @@
 #>
 
 [CmdletBinding(
-    DefaultParameterSetName = 'Credential'
+    DefaultParameterSetName = 'Interactive'
 )]
 [OutputType([PSCustomObject])]
 
@@ -142,7 +143,7 @@ param (
 $ConnectionInfo = Get-MgContext
 if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
     Write-Verbose -Message (
-        'Using existing connection to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account
+        'Using existing connection to {0} with app: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.AppName
     )
 } else {
     if ($PSCmdlet.ParameterSetName -like 'Config') {
@@ -152,19 +153,25 @@ if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
         $ApplicationId = $config.ApplicationId
         $CertificateThumbPrint = $config.CertificateThumbPrint
     }
-    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Interactive') {
-        if ($Credential) {
-            @{
-                Scopes = 'UserAuthenticationMethod.Read.All', 'AuditLog.Read.All'
-            }
-        }
+
+    if ($PSCmdlet.ParameterSetName -like 'Interactive') {
+        $connectionParams = @{ Scopes = 'AuditLog.Read.All', 'Directory.Read.All' }
     } else {
-        @{
-            TenantId              = $TenantId.Guid
-            ClientId              = $ApplicationId.Guid
-            CertificateThumbprint = $CertificateThumbPrint
+        $connectionParams = @{
+            TenantId = $TenantId.Guid
+            ClientId = $ApplicationId.Guid
+        }
+        $CertPath = Join-Path -Path Cert:\LocalMachine\My -ChildPath $CertificateThumbPrint
+        try {
+            $Cert = Get-Item -Path $CertPath -ErrorAction Stop
+            Write-Verbose -Message ('Using computer certificate: {0}' -f $Cert.Subject)
+            $connectionParams.Certificate = $Cert
+        } catch {
+            Write-Verbose -Message ('Using user certificate: {0}' -f $CertificateThumbPrint)
+            $connectionParams.CertificateThumbprint = $CertificateThumbPrint
         }
     }
+
     $null = Connect-MgGraph @connectionParams
     $ConnectionInfo = Get-MgContext
     Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)

@@ -2,13 +2,13 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports
 
 <#PSScriptInfo
-    .VERSION 2.1.0
+    .VERSION 2.1.1
 
     .GUID 6894168a-33aa-430b-b7c9-66cd749c51ab
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2022.  All rights reserved.
 
     .TAGS Azure, ActiveDirectory, AD, user, logon, report
 
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.1.1] - 2022.06.15 - Add support for using certificate from computer store.
         [2.1.0] - 2022.05.17 - Replace parameter -Credential with -Interactive
         [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
         [1.0.2] - 2021.12.31 - move script to Github
@@ -72,7 +73,7 @@
 #>
 
 [CmdletBinding(
-    DefaultParameterSetName = 'Credential'
+    DefaultParameterSetName = 'Interactive'
 )]
 param (
     #region ParameterSet Config
@@ -161,7 +162,7 @@ param (
 $ConnectionInfo = Get-MgContext
 if ($ConnectionInfo.Scopes -match 'AuditLog') {
     Write-Verbose -Message (
-        'Using existing connection to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account
+        'Using existing connection to {0} with app: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.AppName
     )
 } else {
     if ($PSCmdlet.ParameterSetName -like 'Config') {
@@ -171,21 +172,28 @@ if ($ConnectionInfo.Scopes -match 'AuditLog') {
         $ApplicationId = $config.ApplicationId
         $CertificateThumbPrint = $config.CertificateThumbPrint
     }
-    $connectionParams = if ($PSCmdlet.ParameterSetName -like 'Interactive') {
-        @{
-            Scopes = 'AuditLog.Read.All', 'Directory.Read.All'
-        }
+    if ($PSCmdlet.ParameterSetName -like 'Interactive') {
+        $connectionParams = @{ Scopes = 'AuditLog.Read.All', 'Directory.Read.All' }
     } else {
-        @{
-            TenantId              = $TenantId.Guid
-            ClientId              = $ApplicationId.Guid
-            CertificateThumbprint = $CertificateThumbPrint
+        $connectionParams = @{
+            TenantId = $TenantId.Guid
+            ClientId = $ApplicationId.Guid
+        }
+        $CertPath = Join-Path -Path Cert:\LocalMachine\My -ChildPath $CertificateThumbPrint
+        try {
+            $Cert = Get-Item -Path $CertPath -ErrorAction Stop
+            Write-Verbose -Message ('Using computer certificate: {0}' -f $Cert.Subject)
+            $connectionParams.Certificate = $Cert
+        } catch {
+            Write-Verbose -Message ('Using user certificate: {0}' -f $CertificateThumbPrint)
+            $connectionParams.CertificateThumbprint = $CertificateThumbPrint
         }
     }
 
-    $null = Connect-MgGraph @connectionParams # -Scopes AuditLog.Read.All
+    Write-Debug -Message ($connectionParams | ConvertTo-Json)
+    $null = Connect-MgGraph @connectionParams
     $ConnectionInfo = Get-MgContext
-    Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
+    Write-Verbose -Message ('Connected to {0} with app: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.AppName)
 }
 
 function Add-Filter {
@@ -255,7 +263,7 @@ $ExportProperties = @(
 
 $SignInEvents = foreach ($event in Get-MgAuditLogSignIn @RequestProps) {
     $EventProps = @{
-        CreatedDateTime = [datetime]$event.CreatedDateTime
+        CreatedDateTime = ([datetime]$event.CreatedDateTime).ToLocalTime()
         ErrorCode       = $event.Status.ErrorCode
         ErrorDetails    = $event.Status.FailureReason
         OperatingSystem = $event.DeviceDetail.OperatingSystem
