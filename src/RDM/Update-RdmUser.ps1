@@ -49,7 +49,7 @@
 #>
 
 [CmdletBinding(
-    SupportsShouldProcess=$true
+    SupportsShouldProcess
 )]
 [OutputType([PSCustomObject])]
 
@@ -82,8 +82,8 @@ foreach ($user in Get-RDMUser) {
         $notExist = $true
     }
     $Name = '{0} ({1})' -f $user.Description, $user.Name
-    if ($notExist -and $PSCmdlet.ShouldProcess($Name, 'Remove user from database')) {
-        Remove-RDMUser -ID $user.ID -DeleteSQLLogin
+    if ($notExist) {
+        Remove-RDMUser -ID $user.ID #-DeleteSQLLogin
     } else {
         if (-not $user.FirstName) {
             $needsUpdate = $true
