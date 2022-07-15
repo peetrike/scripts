@@ -1,8 +1,8 @@
 ﻿#Requires -Version 2
-#Requires -Modules ActiveDirectory
+# Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.1.0
     .GUID af691618-7b30-4bb3-8fa2-a4631c6b37c7
 
     .AUTHOR CPG4285
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.1.0] - 2022-07-15 - Emit error when no Default proxy e-mail address exists.
         [0.0.1] - 2022-07-15 - Initial release
 
     .PRIVATEDATA
@@ -59,11 +60,9 @@
 #>
 
 [CmdletBinding(
-    SupportsShouldProcess = $true,
-    ConfirmImpact = 'Medium'
+    SupportsShouldProcess = $true
 )]
-#[Alias('')]
-[OutputType([void])]
+#[OutputType([void])]
 
 param (
         [Parameter(
@@ -78,12 +77,24 @@ param (
     $Identity,
 
         [Parameter(
-            Mandatory,
+            Mandatory = $True,
             HelpMessage = 'Please enter e-mail domain to add'
         )]
         [ValidateScript({
             if ($_ -match '^([\w-]+\.)+[\w-]+$') { $true }
-            else { throw 'Please provide valid domain name' }
+            else {
+                $Exception = New-Object -TypeName 'System.ArgumentException' -ArgumentList @(
+                    'Please provide valid domain name'
+                    'Domain'
+                )
+                $ErrorRecord = New-Object -TypeName 'System.Management.Automation.ErrorRecord' -ArgumentList @(
+                    $Exception
+                    'InvalidDomainName'
+                    [Management.Automation.ErrorCategory]::InvalidData
+                    $_
+                )
+                $PSCmdlet.ThrowTerminatingError($ErrorRecord)
+            }
         })]
         [string]
         # e-mail domain suffix to be added
@@ -94,17 +105,32 @@ process {
     foreach ($User in Get-ADUser -Identity $Identity -Properties mail, proxyAddresses) {
         $ProxyList = $User.proxyAddresses
         $DefaultAddress = ($ProxyList -cmatch '^SMTP:')[0]      # -match returns array, if left side is array
-        $NewDefault = $DefaultAddress -replace '@.*', ('@' + $Domain)
-        $NewList = @(
-            $NewDefault
-            ($ProxyList | Where-Object { $_ -ne $NewDefault }) -replace '^SMTP', 'smtp'
-        )
+        if ($DefaultAddress) {
+            $NewDefault = $DefaultAddress -replace '@.*', ('@' + $Domain)
+            $NewList = @(
+                $NewDefault
+                ($ProxyList | Where-Object { $_ -ne $NewDefault }) -replace '^SMTP', 'smtp'
+            )
 
-            # make change
-        $SetProps = @{
-            Replace      = @{ proxyAddresses = $NewList }
-            EmailAddress = $NewDefault
+                # make change
+            $SetProps = @{
+                Replace      = @{ proxyAddresses = $NewList }
+                EmailAddress = $NewDefault -replace 'SMTP:'
+            }
+            Set-ADUser -Identity $User @SetProps
+        } else {
+            $ErrorProps = @{
+                Message            =
+                    'The user account "{0}" does not have default proxy address' -f $User.UserPrincipalName
+                Category           = [System.Management.Automation.ErrorCategory]::ObjectNotFound
+                ErrorId            = 'MissingEmailAddress'
+                TargetObject       = $User
+                RecommendedAction  = 'Add primary e-mail address for user'
+                #CategoryActivity   = $CategoryActivity
+                CategoryTargetName = 'User account'
+                CategoryTargetType = $User.GetType()
+            }
+            Write-Error @ErrorProps
         }
-        Set-ADUser -Identity $User @SetProps
     }
 }
