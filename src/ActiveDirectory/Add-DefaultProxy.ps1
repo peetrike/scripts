@@ -2,7 +2,7 @@
 # Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.1.0
+    .VERSION 0.2.0
     .GUID af691618-7b30-4bb3-8fa2-a4631c6b37c7
 
     .AUTHOR CPG4285
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.2.0] - 2022-07-20 - Use mail property when no Default proxy e-mail address exists.
         [0.1.0] - 2022-07-15 - Emit error when no Default proxy e-mail address exists.
         [0.0.1] - 2022-07-15 - Initial release
 
@@ -105,23 +106,14 @@ process {
     foreach ($User in Get-ADUser -Identity $Identity -Properties mail, proxyAddresses) {
         $ProxyList = $User.proxyAddresses
         $DefaultAddress = ($ProxyList -cmatch '^SMTP:')[0]      # -match returns array, if left side is array
-        if ($DefaultAddress) {
-            $NewDefault = $DefaultAddress -replace '@.*', ('@' + $Domain)
-            $NewList = @(
-                $NewDefault
-                ($ProxyList | Where-Object { $_ -ne $NewDefault }) -replace '^SMTP', 'smtp'
-            )
-
-                # make change
-            $SetProps = @{
-                Replace      = @{ proxyAddresses = $NewList }
-                EmailAddress = $NewDefault -replace 'SMTP:'
-            }
-            Set-ADUser -Identity $User @SetProps
+        if ($DefaultAddress -match '^SMTP:(.*@)') {
+            $NewDefault = $Matches[1] + $Domain
+        } elseif ($User.mail) {
+            $NewDefault = ($User.mail -replace '@.*', ('@' + $Domain))
         } else {
             $ErrorProps = @{
                 Message            =
-                    'The user account "{0}" does not have default proxy address' -f $User.UserPrincipalName
+                    'The user account "{0}" does not have default mail address' -f $User.UserPrincipalName
                 Category           = [System.Management.Automation.ErrorCategory]::ObjectNotFound
                 ErrorId            = 'MissingEmailAddress'
                 TargetObject       = $User
@@ -131,6 +123,18 @@ process {
                 CategoryTargetType = $User.GetType()
             }
             Write-Error @ErrorProps
+            continue
         }
+        $NewList = @(
+            'SMTP:' + $NewDefault
+            ($ProxyList | Where-Object { $_ -ne $NewDefault }) -replace '^SMTP', 'smtp'
+        )
+
+            # make change
+        $SetProps = @{
+            Replace      = @{ proxyAddresses = $NewList }
+            EmailAddress = $NewDefault
+        }
+        Set-ADUser -Identity $User @SetProps
     }
 }
