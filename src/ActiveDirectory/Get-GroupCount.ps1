@@ -28,13 +28,13 @@
     .SYNOPSIS
         Determine number of groups the users are member of
     .DESCRIPTION
-        Discover number of groups for the provided user accounts.  The list contains
-        groups from Active Directory and from the computer where the script is started.
+        Discover number of groups for the provided user accounts.  The groups list contains
+        all the groups that are added to Access Token when user connects through network.
     .EXAMPLE
         Get-GroupCount.ps1 -Identity myUser
         This example finds the AD user account provided and returns number of groups that user belongs to
     .EXAMPLE
-        Get-ADUser -filter [Name -like 'a*'} | Get-GroupCount.ps1
+        Get-ADUser -filter {Name -like 'a*'} | Get-GroupCount.ps1
         This example finds the AD user accounts using Get-ADUser cmdlet and returns
         number of groups those users belong.
     .INPUTS
