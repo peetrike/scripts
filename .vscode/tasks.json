@@ -89,7 +89,7 @@
     {
       "label": "Add script",
       "type": "shell",
-      "command": "Invoke-PSMDTemplate -TemplateName PWScript -OutPath ${input:Folder}",
+      "command": "import-module PWBuild; Invoke-PSMDTemplate -TemplateName PWScript -OutPath ${input:Folder}",
       "problemMatcher": [
       {
         "owner": "powershell",
@@ -115,7 +115,7 @@
     {
       "label": "Add function",
       "type": "shell",
-      "command": "Invoke-PSMDTemplate -TemplateName PWFunction -OutPath ${input:Folder}",
+      "command": "import-module PWBuild; Invoke-PSMDTemplate -TemplateName PWFunction -OutPath ${input:Folder}",
       "problemMatcher": [
       {
         "owner": "powershell",
