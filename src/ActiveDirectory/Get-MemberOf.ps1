@@ -27,20 +27,19 @@
 
 <#
     .SYNOPSIS
-        Short description
+        Find groups the AD principal is member of
 
     .DESCRIPTION
-        Find groups the account is member of
+        This script discovers AD principal's group memberships, i.e. the groups
+        that contain provided principal as member.
 
     .EXAMPLE
-        Get-MemberOf.ps1 -Param1 'Done'
-        Explanation of what the example does
+        Get-ADUser $env:USERNAME | Get-MemberOf.ps1 -Level 2
+        This example discovers currently logged on user group membership for 2 levels of nesting
     .INPUTS
-        Inputs (if any)
+        AD principal to use for discovery
     .OUTPUTS
         List of groups
-    .NOTES
-        General notes
     .LINK
         https://learn.microsoft.com/powershell/module/activedirectory/get-adprincipalgroupmembership
 #>
@@ -56,16 +55,16 @@ param (
             Mandatory = $true,
             ValueFromPipeline = $true
         )]
-        [Alias("p1")]
         [Microsoft.ActiveDirectory.Management.ADObject]
-        # Param1 help description
+        # AD principal to start discovery
     $AdPrincipal,
 
         [Parameter(ParameterSetName = 'Parameter Set 1')]
         [int]
-        # Param2 help description
+        # number of levels to look for
     $Level = 1,
         [bool]
+        # specifies, that returned list should only have unique groups
     $Unique = $true
 )
 
