@@ -1,24 +1,26 @@
-﻿#Requires -Version 5.1
+﻿#Requires -Version 3
+#Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.0.2
     .GUID d4a6ec0d-d2a7-4aaf-818b-237ffc74703d
 
     .AUTHOR CPG4285
     .COMPANYNAME Telia Eesti
     .COPYRIGHT (c) Telia Eesti 2022.  All rights reserved.
 
-    .TAGS
+    .TAGS ActiveDirectory, AD, user, identity
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
-    .EXTERNALMODULEDEPENDENCIES
+    .EXTERNALMODULEDEPENDENCIES ActiveDirectory
     .REQUIREDSCRIPTS
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.2] - 2022-10-21 - Add SamAccountName to returned object
         [0.0.1] - 2022-10-21 - Initial release
 
     .PRIVATEDATA
@@ -31,8 +33,8 @@
         Discover number of groups for the provided user accounts.  The groups list contains
         all the groups that are added to Access Token when user connects through network.
     .EXAMPLE
-        Get-GroupCount.ps1 -Identity myUser
-        This example finds the AD user account provided and returns number of groups that user belongs to
+        Get-GroupCount.ps1 -Identity $env:USERNAME
+        This example returns number of groups that currently logged on user belongs to
     .EXAMPLE
         Get-ADUser -filter {Name -like 'a*'} | Get-GroupCount.ps1
         This example finds the AD user accounts using Get-ADUser cmdlet and returns
@@ -51,25 +53,28 @@
 #>
 
 [CmdletBinding(
-    DefaultParameterSetName = 'Parameter Set 1',
-    SupportsShouldProcess = $true,
-    PositionalBinding = $false,
-    HelpUri = 'http://www.microsoft.com/',
-    ConfirmImpact = 'Medium'
+    DefaultParameterSetName = 'Identity'
 )]
 [OutputType([PSCustomObject])]
 
 param (
         [Parameter(
+            Mandatory,
+            HelpMessage = 'Enter AD User object identity',
             ParameterSetName = 'Identity'
         )]
         [String]
-        # The user account identity
+        # Specifies an Active Directory user object by providing one of the following property values.
+        #   * Distinguished Name
+        #   * GUID (objectGUID)
+        #   * Security Identifier (objectSid)
+        #   * SAM account name  (sAMAccountName)
+        #   * User Principal Name
     $Identity,
         [Parameter(
             ParameterSetName = 'PipeLine',
             ValueFromPipeline
-            )]
+        )]
         [Microsoft.ActiveDirectory.Management.ADUser]
         # The user account object
     $User
@@ -84,6 +89,7 @@ process {
     [PSCustomObject]@{
         Name              = $user.Name
         UserPrincipalName = $user.UserPrincipalName
+        SamAccountName    = $user.SamAccountName
         GroupCount        = $WinIdentity.Groups.Count
     }
 }
