@@ -66,6 +66,20 @@ The `mail` element contains settings that are required to send e-mail:
   - `{0}` is replaced with user account name.
   - `{1}` is replaced with number of days that are remaining.
 
+### ReportFile
+
+The `reportfile` element allows to specify report file path.  If the element is
+empty, not reporting occurs.  When element has file path, that file is used to
+export mail sending events as .CSV file.  Every row in report file has following
+columns defined:
+
+- Date - date when e-mail sending was tried, in sortable format
+- User - user name to be notified
+- Mail - e-mail address used to send notification
+- Days - number of days before expiration, used in notification
+- MailSent - boolean status of sending e-mail
+- ErrorMessage - in case of failure, the Send-MailMessage exception message content.
+
 ## Running script
 
 ### Running with configuration file that has default name
@@ -86,6 +100,14 @@ Send-PasswordNotification.ps1 13 -ConfigFile my.config
 This example sends password notification e-mails to users whose password will
 expire in 13 days.  The configuration file name is explicitly provided on
 command line.
+
+### Running script with -PassThru parameter
+
+```powershell
+Send-PasswordNotification.ps1 13 -DaysBefore 14 -PassThru
+```
+
+This example generates output object for every notification that occurs.
 
 ### Running script without sending out e-mails
 

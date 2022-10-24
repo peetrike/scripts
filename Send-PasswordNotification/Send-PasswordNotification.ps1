@@ -2,12 +2,12 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.6.5
+    .VERSION 1.7.0
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
-    .COPYRIGHT (c) 2021 Peter Wawa.  All rights reserved.
+    .COPYRIGHT (c) 2022 Peter Wawa.  All rights reserved.
 
     .TAGS password, e-mail, email, notification, Windows, PSEdition_Desktop, PSEdition_Core
 
@@ -67,31 +67,8 @@
         None
 
     .NOTES
-        The script requires a config file with similar to following content:
-
-        <?xml version="1.0" encoding="utf-8" ?>
-        <config>
-            <ou></ou> <!-- Search base OU, if needed -->
-            <user>
-                <!-- If the next element exist, the script refers to user as domain\samAccountName -->
-                <!-- Otherwise, the script refers to user as userPrincipalName -->
-                <!-- <useSamAccountName /> -->
-
-                <!-- If the next element exist, the script takes e-mail from  user's manager account, when available -->
-                <!-- Otherwise, the user own mail attribute is used -->
-                <!-- <useManagerMail /> -->
-            </user>
-            <server>mail.server</server>
-            <mail>
-                <from>PasswordNotifier@localhost</from>
-                <subject>Your password will expire soon </subject>
-                <body>Dear User,
-
-        Password of Your user account ({0}) expires in {1} days.
-        Please change Your password ASAP.
-                </body>
-            </mail>
-        </config>
+        The script requires a config file.  You can download sample config file from
+        https://github.com/peetrike/scripts/blob/master/Send-PasswordNotification/Send-PasswordNotification.config
 
     .LINK
         about_ActiveDirectory
@@ -104,6 +81,7 @@
     SupportsShouldProcess = $True,
     DefaultParameterSetName = 'Action'
 )]
+[OutputType([PSCustomObject])]
 param (
         [Parameter(
             Position = 0,
@@ -126,8 +104,14 @@ param (
         })]
         [PSDefaultValue(Help = '<scriptname>.config in the same folder as script')]
         [String]
-        # Configuration file to read.  By default the config file is in the same directory as script and has the same name with .config extension.
+        # Configuration file to read.  By default the config file is
+        # in the same directory as script and has the same name with .config extension.
     $ConfigFile = $(Join-Path -Path $PSScriptRoot -ChildPath ((get-item $PSCommandPath).BaseName + '.config')),
+        [switch]
+        # Return script result to standard output.  By default the script has
+        # no output.  The objects in standard output are same that are
+        # used to generate report .CSV file
+    $PassThru,
         [parameter(
             Mandatory = $true,
             ParameterSetName = 'Version'
@@ -182,6 +166,18 @@ if ($conf.config.ou) {
     $searchProperties.SearchBase = $conf.config.ou
     #$searchProperties.SearchScope = 'Subtree'
 }
+$ReportFile = $conf.config.reportfile
+if ($ReportFile) {
+    $CsvProps = @{
+        NoTypeInformation = $true
+        UseCulture        = $true
+        Encoding          = 'utf8'
+        Path              = $ReportFile
+        Confirm           = $false
+        WhatIf            = $false
+    }
+}
+
 Get-ADUser @searchProperties |
     Where-Object { -not ($_.CannotChangePassword -or $_.PasswordExpired) } |
     ForEach-Object {
@@ -211,11 +207,31 @@ Get-ADUser @searchProperties |
                 if ($PasswordDays -eq $day) {
                     $mailSettings.To = $userMail
                     $mailSettings.Body = ($conf.config.mail.body -f $userName, $day)
-                    if ($PSCmdLet.ShouldProcess($userMail, 'Send e-mail message')) {
-                        Send-MailMessage @mailSettings
+                    $OutputProps = @{
+                        Date         = [datetime]::Now.ToString('s')
+                        User         = $userName
+                        Mail         = $userMail
+                        Days         = $day
+                        ErrorMessage = $null
                     }
                     # Write-Debug ('Message body: {0}' -f $mailSettings.Body)
                     Write-Verbose -Message "User $username ($userMail), password expires in $day days."
+                    if ($PSCmdLet.ShouldProcess($userMail, 'Send e-mail message')) {
+                        try {
+                            Send-MailMessage @mailSettings -ErrorAction Stop
+                            $OutputProps.MailSent = $true
+                        } catch {
+                            $OutputProps.ErrorMessage = $_.Exception.Message
+                            $OutputProps.MailSent = $false
+                        }
+                        $OutputObject = [PSCustomObject] $OutputProps
+                        if ($ReportFile) {
+                            $OutputObject | Export-Csv @CsvProps -Append
+                        }
+                        if ($PassThru) {
+                            $OutputObject
+                        }
+                    }
                 }
             }
         }
