@@ -55,17 +55,20 @@ param (
         [Microsoft.ActiveDirectory.Management.ADUser]
         # AD User account
     $User,
-        [ValidateScript( {
-            Get-RDMDataSource -Name $_
-        })]
+        <# [ValidateScript({
+            if ($_) {
+                Get-RDMDataSource -Name $_
+            }
+        })] #>
         [string]
         # RDM Data Source to be used
     $DataSource,
         [switch]
         # add user and do not confirm
-    $Force
+    $Force,
+        [switch]
+    $PassThru
 )
-
 
 begin {
     if ($DataSource) {
@@ -73,7 +76,7 @@ begin {
         #Update-RDMRepository
         #Update-RDMUI
     } else {
-        $DataSource = Get-RDMCurrentDataSource
+        $DataSource = (Get-RDMCurrentDataSource -Verbose:$false).Name
     }
     Write-Verbose -Message ('Working with Data Source: {0}' -f $DataSource)
 
@@ -84,13 +87,13 @@ process {
     $RdmUserName = '{0}\{1}' -f $domain.NetBIOSName, $user.SamAccountName
 
     if (Get-RDMUser -Name $RdmUserName -WarningAction SilentlyContinue) {
-        Write-Warning -Message ('User: {0} already exists in datasource: {1}' -f $user.name, $DataSource.Name)
+        Write-Warning -Message ('User: {0} already exists in datasource: {1}' -f $RdmUserName, $DataSource)
     } else {
         $UserProps = @{
             Login                    = $RdmUserName
             IntegratedSecurity       = $true
-            # SkipCreateSQLServerLogin = $true
-            Authentification = 'SqlServer'
+            SkipCreateSQLServerLogin = $true
+            Authentification         = 'SqlServer'
         }
         $RdmUser = New-RDMUser @UserProps
         $RdmUser.UserType = [Devolutions.RemoteDesktopManager.UserType]::User
@@ -106,5 +109,9 @@ process {
         if ($Force -or $PSCmdlet.ShouldProcess($User.Name, 'Add user to RDM Data Source')) {
             Set-RDMUser -User $RdmUser
         }
+    }
+
+    if ($PassThru) {
+        Get-RDMUser -Name $RdmUserName
     }
 }
