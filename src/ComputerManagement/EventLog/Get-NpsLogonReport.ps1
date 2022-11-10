@@ -38,6 +38,8 @@
         None
     .OUTPUTS
         List of event details
+    .NOTES
+        This script assumes than users who try to logon are always domain users
     .LINK
         Get-WinEvent
 #>
