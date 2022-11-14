@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.2
+    .VERSION 1.0.3
     .GUID 03ed78db-cabd-4969-b6dd-092cd2f31e7a
 
     .AUTHOR CPG4285
