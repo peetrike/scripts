@@ -20,7 +20,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.0.2] - 2022.05.12 - Add missing example description
+        [1.0.3] - 2022.11.14 - Updated SerialNumber AltIdentity string.
+        [1.0.2] - 2022.05.12 - Add missing example description.
         [1.0.1] - 2022.05.12 - Add ActiveDirectory module as external reference
         [1.0.0] - 2022.05.12 - Initial release
 
@@ -141,7 +142,7 @@ foreach ($Account in Get-ADUser -Filter $AdFilter -Properties altSecurityIdentit
                 $issuer = ConvertTo-ReversePath $cert.Issuer
                 $Serial = ConvertTo-ReverseSN $cert.SerialNumber
 
-                $altSecurityIdentity = 'X509:<I>{0}<SN>{1}' -f $issuer, $Serial
+                $altSecurityIdentity = 'X509:<I>{0}<SR>{1}' -f $issuer, $Serial
 
                 if ($PSCmdlet.ShouldProcess($Account.samAccountName, 'Add Name Mapping')) {
                     Set-ADUser -Identity $Account @ConfirmProps -Add @{

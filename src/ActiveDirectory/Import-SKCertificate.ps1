@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.2.0
+    .VERSION 1.2.1
     .GUID a3b444d6-9e92-4f51-a8dc-dbd5aa155eea
 
     .AUTHOR Jaanus Jõgisu
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.2.1] - 2022.11.14 - Updated SerialNumber AltIdentity string.
         [1.2.0] - 2022.05.12 - Added LeaveExisting parameter
         [1.1.0] - 2022.05.12 - Changed alternate certificate mapping to use
                                SerialNumber instead of Subject, by default
@@ -195,7 +196,7 @@ process {
                         $altSecurityIdentity += '<S>{0}' -f $subject
                     } else {
                         $Serial = ConvertTo-ReverseSN $cert.SerialNumber
-                        $altSecurityIdentity += '<SN>{0}' -f $Serial
+                        $altSecurityIdentity += '<SR>{0}' -f $Serial
                     }
 
                 if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Add Name Mapping')) {
