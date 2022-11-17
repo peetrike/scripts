@@ -27,22 +27,20 @@
 <#
     .SYNOPSIS
         Changes calendar folder permissions for provided mailboxes
-
     .DESCRIPTION
         This script changes calendar folder permissions (sharing) for provided mailboxes
-
     .EXAMPLE
-        Get-Mailbox Allan | Set-CalendarPermission.ps1 -Identity Bertha -AccessLevel Reviewer
+        Get-Mailbox -OrganizationalUnit Users | Set-CalendarPermission.ps1 -User Bertha -AccessLevel Reviewer
+        Explanation of what the example does
+    .EXAMPLE
+        Set-CalendarPermission.ps1 -Identity Allan -User 'Office Assistants' -AccessLevel LimitedDetails
         Explanation of what the example does
     .INPUTS
         List of mailbox objects to change
-
     .OUTPUTS
         Output (if any)
-
     .NOTES
         General notes
-
     .LINK
         https://learn.microsoft.com/powershell/module/exchange/set-mailboxfolderpermission
 #>
