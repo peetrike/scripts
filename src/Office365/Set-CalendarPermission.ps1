@@ -63,6 +63,9 @@ param (
     $Identity,
 
         [Parameter(Mandatory)]
+        [ValidateScript({
+            Get-Recipient -Identity $_
+        })]
         [string]
         # The User parameter specifies the mailbox, mail user, or mail-enabled security group
         # (security principal) that's granted permission to the mailbox folder.
@@ -81,7 +84,7 @@ param (
     $AccessRight,
 
         [string[]]
-        # specifies known calendar folder names
+        # Specifies known calendar folder names
     $KnownName = @(
         'Calendar'
         'Kalendarz'
