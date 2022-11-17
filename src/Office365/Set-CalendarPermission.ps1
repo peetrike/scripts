@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.0.2
     .GUID 7851aa67-806f-4bf1-8f11-ef343c1f4d88
 
     .AUTHOR CPG4285
@@ -11,7 +11,7 @@
     .TAGS office365 exchange calendar sharing
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES
@@ -37,8 +37,6 @@
         Explanation of what the example does
     .INPUTS
         List of mailbox objects to change
-    .OUTPUTS
-        Output (if any)
     .NOTES
         General notes
     .LINK
@@ -48,7 +46,7 @@
 [CmdletBinding(
     SupportsShouldProcess
 )]
-# [OutputType([void])]
+[OutputType([void])]
 
 param (
         [Parameter(
