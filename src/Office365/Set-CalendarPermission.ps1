@@ -1,7 +1,7 @@
 ﻿#Requires -Version 5.1
 
 <#PSScriptInfo
-    .VERSION 0.0.2
+    .VERSION 0.1.0
     .GUID 7851aa67-806f-4bf1-8f11-ef343c1f4d88
 
     .AUTHOR CPG4285
@@ -20,6 +20,7 @@
 
     .RELEASENOTES
         [0.0.1] - 2022-11-17 - Initial release
+        [0.1.0] - 2022-11-21 - Add -Operation parameter
 
     .PRIVATEDATA
 #>
@@ -79,6 +80,15 @@ param (
         # The values that you specify replace the existing permissions for the user on the folder.
     $AccessRight,
 
+        [ValidateSet(
+            'Add',
+            'Change',
+            'Remove'
+        )]
+        [String]
+        # The permission operation
+    $Operation = 'Change',
+
         [string[]]
         # Specifies known calendar folder names
     $KnownName = @(
@@ -95,8 +105,36 @@ process {
         Where-Object Name -In $KnownName
     if ($CalendarList.Count -eq 1) {
         $FolderIdentity = '{0}:\{1}' -f $Identity, $CalendarList[0].Name
-        if ($PSCmdlet.ShouldProcess($FolderIdentity, 'Set permissions to')) {
-            Set-MailboxFolderPermission -Identity $FolderIdentity -User $User -AccessRights $AccessRight
+        switch ($Operation) {
+            'Add' {
+                $PermCommand = Get-Command Add-MailboxFolderPermission
+                $PermProps = @{
+                    Identity     = $FolderIdentity
+                    User         = $User
+                    AccessRights = $AccessRight
+                }
+                $ShouldProcessMessage = 'Add permission on'
+            }
+            'Change' {
+                $PermCommand = Get-Command Set-MailboxFolderPermission
+                $PermProps = @{
+                    Identity     = $FolderIdentity
+                    User         = $User
+                    AccessRights = $AccessRight
+                }
+                $ShouldProcessMessage = 'Change permission on'
+            }
+            'Remove' {
+                $PermCommand = Get-Command Remove-MailboxFolderPermission
+                $PermProps = @{
+                    Identity = $FolderIdentity
+                    User     = $User
+                }
+                $ShouldProcessMessage = 'Remove permission on'
+            }
+        }
+        if ($PSCmdlet.ShouldProcess($FolderIdentity, $ShouldProcessMessage)) {
+            & $PermCommand @PermProps
         }
     } else {
         Write-Warning -Message ('Mailbox {0} has {1} calendar folders, skipping' -f $Identity, $CalendarList.Count)
