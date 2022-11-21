@@ -41,6 +41,10 @@
     .NOTES
         General notes
     .LINK
+        https://learn.microsoft.com/powershell/module/exchange/add-mailboxfolderpermission
+    .LINK
+        https://learn.microsoft.com/powershell/module/exchange/remove-mailboxfolderpermission
+    .LINK
         https://learn.microsoft.com/powershell/module/exchange/set-mailboxfolderpermission
 #>
 
