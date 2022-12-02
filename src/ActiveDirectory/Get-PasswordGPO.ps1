@@ -1,4 +1,10 @@
-﻿function Get-PasswordGPO {
+﻿[CmdletBinding()]
+param (
+        [switch]
+    $AsInt
+)
+
+function Get-PasswordGPO {
     [CmdletBinding()]
     param (
             [switch]
@@ -31,4 +37,4 @@
     }
 }
 
-Get-PasswordGPO
+Get-PasswordGPO @PSBoundParameters
