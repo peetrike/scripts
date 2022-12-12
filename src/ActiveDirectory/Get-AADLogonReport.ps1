@@ -2,7 +2,7 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports
 
 <#PSScriptInfo
-    .VERSION 2.1.1
+    .VERSION 2.1.2
 
     .GUID 6894168a-33aa-430b-b7c9-66cd749c51ab
 
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.1.2] - 2022.12.12 - Make -Interactive parameter optional.
         [2.1.1] - 2022.06.15 - Add support for using certificate from computer store.
         [2.1.0] - 2022.05.17 - Replace parameter -Credential with -Interactive
         [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
@@ -117,7 +118,6 @@ param (
 
     #region ParameterSet Interactive
         [parameter(
-            Mandatory,
             ParameterSetName = 'Interactive'
         )]
         [switch]
