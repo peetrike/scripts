@@ -13,7 +13,7 @@
     .TAGS powershell module cleanup
 
     .LICENSEURI https://opensource.org/licenses/MIT
-    .PROJECTURI https://github.com/peetrike/examples
+    .PROJECTURI https://github.com/peetrike/scripts
     .ICONURI
 
     .EXTERNALMODULEDEPENDENCIES PowerShellGet
