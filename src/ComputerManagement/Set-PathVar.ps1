@@ -1,4 +1,4 @@
-#Requires -Version 2.0
+﻿#Requires -Version 2.0
 
 <#PSScriptInfo
     .VERSION 1.0.1
