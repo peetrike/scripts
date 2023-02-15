@@ -112,7 +112,7 @@ Write-Verbose -Message ('New value: {0}' -f $NewValue)
 
 if ($PSCmdlet.ShouldProcess($Variable, ('Modify Environment variable: operation - {0}') -f $Operation)) {
     if (($Target -eq [EnvironmentVariableTarget]::Machine) -and -not (Test-IsAdmin)) {
-        throw (New-Object -TypeName System.Management.Automation.PSSecurityException -ArgumentList 'Admin Privileges required')
+        throw [Management.Automation.PSSecurityException] 'Admin Privileges required'
     }
     [Environment]::SetEnvironmentVariable($Variable, $NewValue, $Target)
 }
