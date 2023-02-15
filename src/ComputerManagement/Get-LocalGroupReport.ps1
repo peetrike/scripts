@@ -101,7 +101,11 @@ if (-not (Get-Command -Name Get-LocalGroupMember -ErrorAction SilentlyContinue) 
         process {
             Write-Verbose -Message 'Selecting group'
 
-            $result = [DirectoryServices.AccountManagement.GroupPrincipal]::FindByIdentity($LocalContext, $NameIdentity, $Name)
+            $result = [DirectoryServices.AccountManagement.GroupPrincipal]::FindByIdentity(
+                $LocalContext,
+                $NameIdentity,
+                $Name
+            )
             if ($result) {
                 $Group = $result
             } else {
