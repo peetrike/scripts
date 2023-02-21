@@ -55,6 +55,9 @@ param (
         [Microsoft.ActiveDirectory.Management.ADUser]
         # AD User account
     $User,
+        [string]
+        # RDM user role to add
+    $Role,
         <# [ValidateScript({
             if ($_) {
                 Get-RDMDataSource -Name $_
@@ -108,6 +111,20 @@ process {
 
         if ($Force -or $PSCmdlet.ShouldProcess($User.Name, 'Add user to RDM Data Source')) {
             Set-RDMUser -User $RdmUser
+
+            if ($Role) {
+                try {
+                    $RoleObject = Get-RDMRole -Name $Role -ErrorAction Stop
+                    Add-RDMRoleToUser -RoleObject $RoleObject -UserObject $RdmUser
+                    Set-RDMUser -User $RdmUser
+                } catch {
+                    $ErrorProps = @{
+                        Message  = "Can't find role: {0}, skipping Add Role" -f $Role
+                        Category = 'InvalidArgument'
+                    }
+                    Write-Error @ErrorProps -ErrorAction Continue
+                }
+            }
         }
     }
 
