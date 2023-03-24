@@ -2,7 +2,7 @@
 # Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.1.0
+    .VERSION 0.1.1
     .GUID 47266bc4-ca5d-418d-b7a2-44f05b26ea05
 
     .AUTHOR Peter Wawa
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.1.1] - 2023-03-24 - Add Authentication type
         [0.1.0] - 2023-03-24 - Remove dependency from ActiveDirectory module
         [0.0.1] - 2022-11-10 - Initial release
 
@@ -115,6 +116,7 @@ Get-WinEvent -LogName Security -FilterXPath $xPathFilter | ForEach-Object {
         RadiusClient    = $xmlEvent.SelectSingleNode('//*[@Name = "ClientName"]').InnerText
         Result          = $xmlEvent.SelectSingleNode('//*[@Name = "Reason"]').InnerText
         CallingStation  = $xmlEvent.SelectSingleNode('//*[@Name = "CallingStationID"]').InnerText
+        AuthType        = $xmlEvent.SelectSingleNode('//*[@Name = "AuthenticationType"]').InnerText
     }
 
     $eventProps.UserName = switch -Regex ($LogonObjectPath) {
