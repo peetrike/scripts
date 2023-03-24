@@ -1,15 +1,14 @@
 ﻿#Requires -Version 3.0
-# Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.1.1
+    .VERSION 0.1.2
     .GUID 47266bc4-ca5d-418d-b7a2-44f05b26ea05
 
     .AUTHOR Peter Wawa
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2022.  All rights reserved.
 
-    .TAGS
+    .TAGS nps, logon, event
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI
@@ -47,7 +46,6 @@
 #>
 
 [CmdletBinding()]
-#[Alias('')]
 [OutputType([psobject])]
 param (
         [ValidateSet('Both', 'Failure', 'Success')]
@@ -103,7 +101,7 @@ $xPathFilter += ']]'
 
 Write-Verbose -Message ("Using filter:`n{0}" -f $xPathFilter)
 
-Get-WinEvent -LogName Security -FilterXPath $xPathFilter | ForEach-Object {
+Get-WinEvent -FilterXPath $xPathFilter | ForEach-Object {
     $currentEvent = $_
     $XmlEvent = [xml] $currentEvent.ToXml()
     $LogonObjectPath = $xmlEvent.SelectSingleNode('//*[@Name = "FullyQualifiedSubjectUserName"]').InnerText
