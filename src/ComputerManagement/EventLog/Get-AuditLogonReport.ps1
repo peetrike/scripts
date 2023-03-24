@@ -31,9 +31,9 @@
 
 <#
     .SYNOPSIS
-        Generates Logon Event report
+        Generates Logon Event report from DC event log.
     .DESCRIPTION
-        This script generates logon/logoff event report.
+        This script generates logon/logoff event report from audit events on domain controllers.
     .EXAMPLE
         .\Get-AuditLogonReport.ps1 -After ([datetime]::Today) | Out-Gridview
 
