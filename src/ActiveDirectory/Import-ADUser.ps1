@@ -10,7 +10,7 @@
     .COMPANYNAME Telia Eesti
     .COPYRIGHT (c) Telia Eesti 2023  All rights reserved.
 
-    .TAGS
+    .TAGS ActiveDirectory, AD, user, account, import
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI https://github.com/peetrike/scripts
