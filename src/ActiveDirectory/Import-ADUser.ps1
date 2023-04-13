@@ -88,7 +88,7 @@ if ($OrganizationalUnit) {
 }
 
 
-foreach ($User in import-csv @CsvProps) {
+foreach ($User in Import-Csv @CsvProps) {
     if (-not $user.Name) {
         $UserName = '{0} {1}' -f $User.GivenName, $User.Surname
         $User | Add-Member -MemberType NoteProperty -Name 'Name' -Value $UserName
