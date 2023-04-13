@@ -41,7 +41,7 @@
             * SamAccountName
     .EXAMPLE
         Import-ADUser -CsvPath users.csv
-        This example creates
+        This example creates new user account based on specified .csv file
 #>
 
 [CmdletBinding(
