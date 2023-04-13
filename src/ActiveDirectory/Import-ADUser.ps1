@@ -31,9 +31,9 @@
         Create AD users based on .CSV file
     .DESCRIPTION
         This script takes user account info from .CSV file and creates new user accounts.
-        Script adds ProxyAddresses property to user accounts after creating users.
         If ProxyAddresses property is present, it should have addresses separated
         by -ProxySeparator parameter value (by default + character).
+        Script adds ProxyAddresses property to user accounts after creating users.
 
         It is also assumed, that .CSV file contains at least following properties:
             * GivenName
