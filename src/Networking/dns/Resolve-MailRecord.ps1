@@ -75,7 +75,7 @@ process {
         (Get-Dns -Name $SingleName -Type TXT).Answer |
             Where-Object Text -like 'v=spf*'
 
-        $NameList = '_dmarc', '_domainkey' | ForEach-Object { '{0}.{1}' -f $_, $SingleName }
-        ($NameList | Get-Dns -Type TXT).Answer
+        $NameList = '_dmarc', 'selector1._domainkey', 'selector2._domainkey' | ForEach-Object { '{0}.{1}' -f $_, $SingleName }
+        ($NameList | Get-Dns -Type ANY).Answer
     }
 }
