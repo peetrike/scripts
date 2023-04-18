@@ -1,5 +1,5 @@
-﻿#Requires -Version 5.1
-#Requires -Modules RemoteDesktopManager
+﻿#Requires -Version 7
+#Requires -Modules Devolutions.PowerShell
 
 <#PSScriptInfo
 
@@ -54,8 +54,6 @@ Param(
 
 if ($DataSource) {
     Get-RDMDataSource -Name $DataSource | Set-RDMCurrentDataSource
-    Update-RDMRepository
-    Update-RDMUI
 } else {
     $CurrentDataSource = Get-RDMCurrentDataSource
     $DataSource = $CurrentDataSource.Name
@@ -65,11 +63,9 @@ Write-Verbose -Message ('Operating with datasource {0}' -f $DataSource)
 if ($Vault) {
     $Repository = Get-RDMRepository -Name $Vault
     Set-RDMCurrentRepository -Repository $Repository
-    Update-RDMRepository
-    Update-RDMUI
 } else {
     $currentVault = Get-RDMCurrentRepository
-    $vault = $currentVault.Name
+    $Vault = $currentVault.Name
 }
 Write-Verbose -Message ('Working with vault: {0}' -f $Vault)
 
@@ -102,7 +98,7 @@ $sessionList = Get-RDMSession @SessionParams |
             $ObjectProperties.IP = $Resolved.IPAddress
         }
         if ($ObjectProperties.port -eq -1) { $ObjectProperties.Port = 3389 }
-        New-Object -TypeName 'PSCustomObject' -Property $ObjectProperties
+        [PSCustomObject] $ObjectProperties
     }
 
 if ($Path) {

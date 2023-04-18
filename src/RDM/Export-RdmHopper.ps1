@@ -1,5 +1,5 @@
-﻿#Requires -Version 5.1
-#Requires -Modules RemoteDesktopManager
+﻿#Requires -Version 7
+#Requires -Modules Devolutions.PowerShell
 
 <#PSScriptInfo
     .VERSION 1.0.2
@@ -47,7 +47,7 @@
 #>
 
 [CmdletBinding()]
-Param(
+param (
         [string]
         # Path to .csv file to be written
     $Path,
@@ -75,8 +75,6 @@ Param(
 
 if ($DataSource) {
     Get-RDMDataSource -Name $DataSource | Set-RDMCurrentDataSource
-    Update-RDMRepository
-    Update-RDMUI
 } else {
     $CurrentDataSource = Get-RDMCurrentDataSource
     $DataSource = $CurrentDataSource.Name
@@ -86,11 +84,9 @@ Write-Verbose -Message ('Operating with datasource {0}' -f $DataSource)
 if ($Vault) {
     $Repository = Get-RDMRepository -Name $Vault
     Set-RDMCurrentRepository -Repository $Repository
-    Update-RDMRepository
-    Update-RDMUI
 } else {
     $currentVault = Get-RDMCurrentRepository
-    $vault = $currentVault.Name
+    $Vault = $currentVault.Name
 }
 Write-Verbose -Message ('Working with vault: {0}' -f $Vault)
 

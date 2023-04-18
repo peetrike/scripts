@@ -1,5 +1,5 @@
-﻿#Requires -Version 5.1
-#Requires -Modules RemoteDesktopManager, ActiveDirectory
+﻿#Requires -Version 7
+#Requires -Modules Devolutions.PowerShell, ActiveDirectory
 
 <#PSScriptInfo
     .VERSION 1.0.3

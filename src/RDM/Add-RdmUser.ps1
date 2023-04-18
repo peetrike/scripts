@@ -1,5 +1,5 @@
-﻿#Requires -Version 5.1
-#Requires -Modules RemoteDesktopManager, ActiveDirectory
+﻿#Requires -Version 7
+#Requires -Modules Devolutions.PowerShell, ActiveDirectory
 
 <#PSScriptInfo
     .VERSION 0.0.1
@@ -89,9 +89,10 @@ begin {
 process {
     $RdmUserName = '{0}\{1}' -f $domain.NetBIOSName, $user.SamAccountName
 
-    if (Get-RDMUser -Name $RdmUserName -WarningAction SilentlyContinue) {
+    try {
+        Get-RDMUser -Name $RdmUserName
         Write-Warning -Message ('User: {0} already exists in datasource: {1}' -f $RdmUserName, $DataSource)
-    } else {
+    } catch {
         $UserProps = @{
             Login                    = $RdmUserName
             IntegratedSecurity       = $true

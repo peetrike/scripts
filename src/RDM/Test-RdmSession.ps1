@@ -1,5 +1,5 @@
-﻿#Requires -Version 5.1
-#Requires -Modules RemoteDesktopManager
+﻿#Requires -Version 7
+#Requires -Modules Devolutions.PowerShell
 
 <#PSScriptInfo
     .VERSION 1.1.2
@@ -68,8 +68,6 @@ param (
 
 if ($DataSource) {
     Get-RDMDataSource -Name $DataSource | Set-RDMCurrentDataSource
-    Update-RDMRepository
-    Update-RDMUI
 } else {
     $CurrentDataSource = Get-RDMCurrentDataSource
     $DataSource = $CurrentDataSource.Name
@@ -79,11 +77,9 @@ Write-Verbose -Message ('Operating with datasource {0}' -f $DataSource)
 if ($Vault) {
     $Repository = Get-RDMRepository -Name $Vault
     Set-RDMCurrentRepository -Repository $Repository
-    Update-RDMRepository
-    Update-RDMUI
 } else {
     $currentVault = Get-RDMCurrentRepository
-    $vault = $currentVault.Name
+    $Vault = $currentVault.Name
 }
 Write-Verbose -Message ('Working with vault: {0}' -f $Vault)
 
@@ -116,15 +112,19 @@ function Test-RdmConnection {
         $TestProperties = @{
             ComputerName = $InputObject.Host
         }
-        $TestProperties.Port = if ($Port) { $Port } elseif ($InputObject.HostPort -ne -1) { $InputObject.HostPort } else { 3389 }
+        $TestProperties.Port = if ($Port) {
+            $Port
+        } elseif ($InputObject.HostPort -ne -1) {
+            $InputObject.HostPort
+        } else { 3389 }
         $result = Test-NetConnection @TestProperties
         [PSCustomObject] @{
-            Folder   = $InputObject.Group
-            ComputerName = $InputObject.Name
-            Hostname = $result.ComputerName
-            IP = $result.RemoteAddress
-            Port = $result.RemotePort
-            PingSucceeded = $result.PingSucceeded
+            Folder           = $InputObject.Group
+            ComputerName     = $InputObject.Name
+            Hostname         = $result.ComputerName
+            IP               = $result.RemoteAddress
+            Port             = $result.RemotePort
+            PingSucceeded    = $result.PingSucceeded
             TcpTestSucceeded = $result.TcpTestSucceeded
         }
     }

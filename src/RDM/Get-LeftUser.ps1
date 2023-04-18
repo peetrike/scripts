@@ -1,4 +1,5 @@
-﻿#Requires -Modules RemoteDesktopManager
+﻿#Requires -Version 7
+#Requires -Modules Devolutions.PowerShell
 
 [CmdletBinding()]
 param (
