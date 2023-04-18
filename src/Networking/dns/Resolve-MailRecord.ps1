@@ -2,7 +2,7 @@
 #Requires -Modules Indented.Net.Dns
 
 <#PSScriptInfo
-    .VERSION 0.1.2
+    .VERSION 0.1.3
     .GUID 44df3732-f427-452b-bfe3-cce783102778
 
     .AUTHOR Meelis Nigols
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.1.3] - 2023.04.18 - Add DKIM specific records
         [0.1.2] - 2021.12.31 - Moved script to Github
         [0.1.0] - 2020.09.04 - changed dependent module to make script compatible with PowerShell 7
         [0.0.2] - 2020.03.30 - Added DKIM record collection
