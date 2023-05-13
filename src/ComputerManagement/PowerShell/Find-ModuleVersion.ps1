@@ -1,5 +1,4 @@
 #Requires -Version 3
-#Requires -Modules @{ModuleName = 'PowerShellGet'; MaximumVersion = 2.99}
 
 <#
     .SYNOPSIS
@@ -16,13 +15,13 @@ param (
         [string]
         [SupportsWildcards()]
         # Specifies module name to search
-    $Name = '*',
+    $Name,
         [ValidateSet('AllUsers', 'CurrentUser')]
         [string]
-    $Scope = 'AllUsers',
+    $Scope,
         [ValidateRange(1, 10)]
         [int]
-    $VersionCount = 2
+    $VersionCount
 )
 
 function Find-ModuleVersion {

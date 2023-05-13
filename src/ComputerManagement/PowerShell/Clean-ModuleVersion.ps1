@@ -1,9 +1,8 @@
 #Requires -Version 3
-#Requires -Modules @{ModuleName = 'PowerShellGet'; MaximumVersion = 2.99}
 
 <#PSScriptInfo
 
-    .VERSION 1.0.0
+    .VERSION 1.1.0
     .GUID ae7932ba-f838-4a6b-b66e-0f30039683a3
 
     .AUTHOR CPG4285
@@ -21,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.0] - 2023.05.13 - Update modules location discovery
         [1.0.0] - 2023.01.16 - Initial release
 
     .PRIVATEDATA
@@ -44,14 +44,14 @@ param (
         [string]
         [SupportsWildcards()]
         # Specifies module name to search
-    $Name = '*',
+    $Name,
         [ValidateSet('AllUsers', 'CurrentUser')]
         [string]
-    $Scope = 'AllUsers',
+    $Scope,
         [ValidateRange(1, 10)]
         [int]
         # Number of versions to keep
-    $VersionCount = 2
+    $VersionCount
 )
 
 function Clean-ModuleVersion {
