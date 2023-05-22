@@ -1,5 +1,6 @@
 ﻿#Requires -Version 7
-#Requires -Modules Devolutions.PowerShell, ActiveDirectory
+#Requires -Modules ActiveDirectory
+#, Devolutions.PowerShell
 
 <#PSScriptInfo
     .VERSION 0.0.1
