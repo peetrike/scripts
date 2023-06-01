@@ -1,5 +1,5 @@
 ﻿#Requires -Version 7
-# Requires -Modules Devolutions.PowerShell
+#Requires -Modules Devolutions.PowerShell
 
 <#PSScriptInfo
     .VERSION 1.1.2
