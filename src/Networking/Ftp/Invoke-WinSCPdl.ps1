@@ -87,16 +87,17 @@ process {
         foreach ($f in $File) {
             ('Downloading file: {0}{1}' -f $remotePath, $f.Name) | Write-Log
 
-            $session.GetFiles($session.EscapeFileMask($remotePath + $f.Name), $localPath).Check()
+            $RemoteFileName = $session.EscapeFileMask($remotePath + $f.Name)
+            $session.GetFiles($RemoteFileName, $localPath).Check()
             $filepath = Join-Path $localPath $f.Name
 
             if (Test-Path $filepath) {
                 ('The file is downloaded to {0}' -f $filepath) | Write-Log
 
-                $fileSize = (Get-ChildItem $filepath).Length
+                $fileSize = (Get-Item $filepath).Length
                 if ($fileSize -eq $f.Length) {
                     ('The downloaded file length {0} is the same as in FTP server' -f $fileSize) | Write-Log
-                    $session.RemoveFiles($session.EscapeFileMask($remotePath + $f.Name)) | Write-Log
+                    $session.RemoveFiles($RemoteFileName) | Write-Log
                 }
             }
         }
