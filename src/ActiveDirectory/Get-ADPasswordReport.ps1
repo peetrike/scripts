@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.5
+    .VERSION 1.1.0
 
     .GUID 0c74c504-8341-4a2c-b89b-8993b6bac6f5
 
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.0] - 2023.09.26 - Add parameter to include OU to report.
         [1.0.5] - 2021.12.31 - Moved script to Github.
         [1.0.4] - 2020.11.24 - Renamed ExpiryDate column to PasswordExpiryDate
         [1.0.3] - 2020.11.24 - Added CannotChangePassword, LastLogonDate to report
@@ -38,7 +39,6 @@
         This script generates password expiration report for AD users.
         The result is saved as .csv file.  The report file name is current AD domain name or OU name
         when -SearchBase parameter was used.
-
     .EXAMPLE
         Get-ADPasswordReport -Filter {Name -like 'one*'} -SearchBase 'OU=Employees,DC=example,DC=com'
 
@@ -53,10 +53,8 @@
 
         This command finds all users from current AD domain and reports their password.  The report is saved in
         c:\reports folder.
-
     .LINK
-        Get-ADUser https://docs.microsoft.com/powershell/module/activedirectory/get-aduser
-
+        Get-ADUser https://learn.microsoft.com/powershell/module/activedirectory/get-aduser
 #>
 
 [CmdletBinding()]
@@ -89,11 +87,15 @@ Param(
         [Alias('Path')]
         [string]
         # Specifies the folder, where report .CSV should be saved.  Default value is current directory.
-    $ReportPath = $PWD
+    $ReportPath = $PWD,
+        [switch]
+        # Add OU distinguished name to report
+    $IncludeOU
 )
 
 begin {
     $AdProperties = @(
+        'msDS-UserPasswordExpiryTimeComputed'
         'DisplayName'
         'CannotChangePassword'
         'LastLogonDate'
@@ -101,7 +103,6 @@ begin {
         'PasswordExpired'
         'PasswordNeverExpires'
         'PasswordLastSet'
-        'msDS-UserPasswordExpiryTimeComputed'
     )
     $UserProps = @{
         Filter     = $Filter
@@ -120,15 +121,23 @@ begin {
     $expiryDate = @{
         Name       = 'PasswordExpiryDate'
         Expression = {
-            $value = $_."msDS-UserPasswordExpiryTimeComputed"
+            $value = $_.'msDS-UserPasswordExpiryTimeComputed'
             if ($value -and ($value -lt [datetime]::MaxValue.ToFileTime())) {
                 [datetime]::FromFileTime($value)
             }
         }
     }
-    $SelectProperties = (
-        $AdProperties | Select-Object -First ($AdProperties.Count - 1)
-    ) + 'UserPrincipalName', $expiryDate
+    $SelectProperties = @(
+        $AdProperties | Select-Object -Skip 1
+        'UserPrincipalName'
+        $expiryDate
+        if ($IncludeOU) {
+            @{
+                Name       = 'OrganizationalUnit'
+                Expression = { ($_.DistinguishedName.Split(',') | Select-Object -Skip 1) -join ',' }
+            }
+        }
+    )
 }
 
 process {
