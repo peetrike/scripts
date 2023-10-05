@@ -2,7 +2,7 @@
 # Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.2.0
+    .VERSION 0.3.0
     .GUID af691618-7b30-4bb3-8fa2-a4631c6b37c7
 
     .AUTHOR CPG4285
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.3.0] - 2023-10-05 - Add ability to change UPN with default e-mail address.
         [0.2.0] - 2022-07-20 - Use mail property when no Default proxy e-mail address exists.
         [0.1.0] - 2022-07-15 - Emit error when no Default proxy e-mail address exists.
         [0.0.1] - 2022-07-15 - Initial release
@@ -99,7 +100,10 @@ param (
         })]
         [string]
         # e-mail domain suffix to be added
-    $Domain
+    $Domain,
+        [Alias('UPN')]
+        [switch]
+    $FixUPN
 )
 
 process {
@@ -134,6 +138,9 @@ process {
         $SetProps = @{
             Replace      = @{ proxyAddresses = $NewList }
             EmailAddress = $NewDefault
+        }
+        if ($FixUPN) {
+            $SetProps.UserPrincipalName = $NewDefault
         }
         Set-ADUser -Identity $User @SetProps
     }
