@@ -1,13 +1,13 @@
 ﻿#Requires -Version 2
-# Requires -Modules ActiveDirectory
+#Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.3.0
+    .VERSION 0.3.1
     .GUID af691618-7b30-4bb3-8fa2-a4631c6b37c7
 
-    .AUTHOR CPG4285
+    .AUTHOR Peter Wawa
     .COMPANYNAME Telia Eesti
-    .COPYRIGHT (c) Telia Eesti 2022.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti 2023.  All rights reserved.
 
     .TAGS ActiveDirectory, AD, user, e-mail
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.3.1] - 2023-10-05 - Add -WhatIf/-Confirm support.
         [0.3.0] - 2023-10-05 - Add ability to change UPN with default e-mail address.
         [0.2.0] - 2022-07-20 - Use mail property when no Default proxy e-mail address exists.
         [0.1.0] - 2022-07-15 - Emit error when no Default proxy e-mail address exists.
@@ -34,7 +35,6 @@
     .DESCRIPTION
         This script constructs new e-mail address from current default in ProxyAddresses
         and adds it as a new default address.
-
     .EXAMPLE
         Add-DefaultProxy.ps1 -Identity username -Domain 'domain.com'
 
@@ -45,18 +45,13 @@
         This example takes Active Directory users from `Get-ADUser` cmdlet and
         adds new e-mail to them.
     .EXAMPLE
-        Get-AdGroupMember -Id IT | Get-AdUser | Add-DefaultProxy.ps1 -Domain 'domain.com'
+        Get-AdGroupMember -Id IT | Get-AdUser | Add-DefaultProxy.ps1 -Domain 'domain.com' -FixUpn
 
-        This example takes group members and adds new e-mail address.
-
+        This example takes group members, adds new e-mail address and changes UPN.
     .INPUTS
         Collection of ADUser objects
     .OUTPUTS
         Output (if any)
-
-    .NOTES
-        General notes
-
     .LINK
         Set-ADUSer: https://learn.microsoft.com/powershell/module/activedirectory/set-aduser
 #>
@@ -101,9 +96,11 @@ param (
         [string]
         # e-mail domain suffix to be added
     $Domain,
+
         [Alias('UPN')]
         [switch]
-    $FixUPN
+        # Change UserPrincipalName with default e-mail
+    $FixUpn
 )
 
 process {
@@ -135,13 +132,15 @@ process {
         )
 
             # make change
-        $SetProps = @{
-            Replace      = @{ proxyAddresses = $NewList }
-            EmailAddress = $NewDefault
+        if ($PSCmdlet.ShouldProcess($User.UserPrincipalName, 'Change default e-mail')) {
+            $SetProps = @{
+                Replace      = @{ proxyAddresses = $NewList }
+                EmailAddress = $NewDefault
+            }
+            if ($FixUPN) {
+                $SetProps.UserPrincipalName = $NewDefault
+            }
+            Set-ADUser -Identity $User @SetProps
         }
-        if ($FixUPN) {
-            $SetProps.UserPrincipalName = $NewDefault
-        }
-        Set-ADUser -Identity $User @SetProps
     }
 }
