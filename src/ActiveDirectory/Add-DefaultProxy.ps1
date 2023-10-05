@@ -58,7 +58,7 @@
         General notes
 
     .LINK
-        Set-ADUSer: https://docs.microsoft.com/powershell/module/activedirectory/set-aduser
+        Set-ADUSer: https://learn.microsoft.com/powershell/module/activedirectory/set-aduser
 #>
 
 [CmdletBinding(
