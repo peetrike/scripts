@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.3.1
+    .VERSION 0.3.2
     .GUID af691618-7b30-4bb3-8fa2-a4631c6b37c7
 
     .AUTHOR Peter Wawa
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.3.2] - 2023-10-11 - Add previous mail address to proxy addresses.
         [0.3.1] - 2023-10-05 - Add -WhatIf/-Confirm support.
         [0.3.0] - 2023-10-05 - Add ability to change UPN with default e-mail address.
         [0.2.0] - 2022-07-20 - Use mail property when no Default proxy e-mail address exists.
@@ -128,6 +129,7 @@ process {
         }
         $NewList = @(
             'SMTP:' + $NewDefault
+            'smtp:' + $user.mail
             ($ProxyList | Where-Object { $_ -ne $NewDefault }) -replace '^SMTP', 'smtp'
         )
 
