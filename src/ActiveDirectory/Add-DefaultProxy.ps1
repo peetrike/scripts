@@ -130,9 +130,11 @@ process {
         }
         $NewList = @(
             'SMTP:' + $NewDefault
-            'smtp:' + $user.mail
-            ($ProxyList | Where-Object { $_ -ne $NewDefault }) -replace '^SMTP', 'smtp'
-        ) | Select-Object -Unique
+            ($ProxyList | Where-Object { $_ -notlike "*$NewDefault" }) -replace '^SMTP', 'smtp'
+        )
+        if (-not ($NewList -match $user.mail)) {
+            $NewList += 'smtp:' + $user.mail
+        }
 
             # make change
         if ($PSCmdlet.ShouldProcess($User.UserPrincipalName, 'Change default e-mail')) {
