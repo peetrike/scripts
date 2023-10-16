@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.1.0
+    .VERSION 1.1.1
 
     .GUID 0c74c504-8341-4a2c-b89b-8993b6bac6f5
 
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.1] - 2023.10.16 - Add Enabled status to report.
         [1.1.0] - 2023.09.26 - Add parameter to include OU to report.
         [1.0.5] - 2021.12.31 - Moved script to Github.
         [1.0.4] - 2020.11.24 - Renamed ExpiryDate column to PasswordExpiryDate
@@ -114,8 +115,12 @@ begin {
 
     $CsvProps = @{
         UseCulture        = $true
-        Encoding          = 'Default'
+        Encoding          = 'utf8'
         NoTypeInformation = $true
+    }
+
+    if ($PSVersionTable.PSVersion.Major -gt 5) {
+        $CsvProps.Encoding = 'utf8Bom'
     }
 
     $expiryDate = @{
@@ -130,6 +135,7 @@ begin {
     $SelectProperties = @(
         $AdProperties | Select-Object -Skip 1
         'UserPrincipalName'
+        'Enabled'
         $expiryDate
         if ($IncludeOU) {
             @{
