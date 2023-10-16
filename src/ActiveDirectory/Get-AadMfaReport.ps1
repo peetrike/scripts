@@ -2,7 +2,7 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
 
 <#PSScriptInfo
-    .VERSION 2.1.1
+    .VERSION 3.0.0
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
@@ -20,6 +20,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [3.0.0] - 2023.10.16 - Refactor script to use v2 Microsoft.Graph modules.
+                             - Add -Top parameter
         [2.1.1] - 2022.06.15 - Add support for using certificate from computer store.
         [2.1.0] - 2022.06.08 - Replace parameter -Credential with -Interactive
         [2.0.0] - 2022.05.17 - Script rewritten to use Microsoft.Graph modules
@@ -56,7 +58,7 @@
     .NOTES
         This script requires following Graph API permissions:
         * UserAuthenticationMethod.Read.All
-        * AuditLog.Read.All
+        * User.Read.All
 
     .LINK
         https://docs.microsoft.com/graph/api/resources/userregistrationdetails
@@ -116,6 +118,10 @@ param (
         $Interactive,
     #endregion
 
+        [int]
+        # specifies maximum number of responses
+    $Top,
+
         [ValidateScript( {
             Test-Path -Path $_ -PathType Container
         } )]
@@ -155,7 +161,9 @@ if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
     }
 
     if ($PSCmdlet.ParameterSetName -like 'Interactive') {
-        $connectionParams = @{ Scopes = 'AuditLog.Read.All', 'Directory.Read.All' }
+        $connectionParams = @{
+            Scopes = 'Directory.Read.All', 'UserAuthenticationMethod.Read.All'
+        }
     } else {
         $connectionParams = @{
             TenantId = $TenantId.Guid
@@ -175,11 +183,6 @@ if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
     $null = Connect-MgGraph @connectionParams
     $ConnectionInfo = Get-MgContext
     Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
-}
-
-if ((Get-MgProfile).Name -like 'v1.0') {
-    # switch to Beta endpoint
-    Select-MgProfile -Name beta
 }
 
 $PropertyList = @(
@@ -213,7 +216,18 @@ if (-not $PassThru.IsPresent) {
     }
 }
 
-Get-MgUser -Filter $UserFilter -Property ($PropertyList -join ',') |
+$MGUserProps = @{
+    Filter   = $UserFilter
+    Property = $PropertyList -join ','
+}
+
+if ($Top) {
+    $MGUserProps.Top = $Top
+} else {
+    $MGUserProps.All = $true
+}
+
+Get-MgUser @MGUserProps |
     ForEach-Object {
         $User = $_
         Write-Verbose -Message ('Processing user: {0}' -f $user.DisplayName)
