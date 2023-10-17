@@ -2,7 +2,7 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
 
 <#PSScriptInfo
-    .VERSION 3.0.0
+    .VERSION 3.1.0
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [3.1.0] - 2023.10.17 - Add -Filter and -CountVariable parameters.
         [3.0.0] - 2023.10.16 - Refactor script to use v2 Microsoft.Graph modules.
                              - Add -Top parameter
         [2.1.1] - 2022.06.15 - Add support for using certificate from computer store.
@@ -118,9 +119,25 @@ param (
         $Interactive,
     #endregion
 
+
         [int]
         # specifies maximum number of responses
     $Top,
+        [string]
+        # specifies variable name to add returned object count
+    $CountVariable,
+        [string]
+        # Specifies filter query to add to default filter
+    $Filter,
+
+        [ValidateSet(
+            'All',
+            'Disabled',
+            'Enabled'
+        )]
+        [string]
+        # Specifies that only users with given MFA status should be returned.
+    $MfaStatus = 'All',
 
         [ValidateScript( {
             Test-Path -Path $_ -PathType Container
@@ -133,14 +150,6 @@ param (
         [switch]
         # Passes user accounts to pipeline instead of report file.
     $PassThru,
-        [ValidateSet(
-            'All',
-            'Disabled',
-            'Enabled'
-        )]
-        [string]
-        # Specifies that only users with given MFA status should be returned.
-    $MfaStatus = 'All',
         [string]
         # Specifies string that is used to separate authentication methods.
     $MfaListSeparator = "`n"
@@ -185,18 +194,6 @@ if ($ConnectionInfo.Scopes -match 'UserAuthenticationMethod') {
     Write-Verbose -Message ('Connected to {0} as: {1}' -f $ConnectionInfo.TenantId, $ConnectionInfo.Account)
 }
 
-$PropertyList = @(
-    'assignedLicenses'
-    'companyName'
-    'department'
-    'displayName'
-    'id'
-    'onPremisesLastSyncDateTime'
-    'userPrincipalName'
-)
-
-$UserFilter = "accountEnabled eq true and userType eq 'Member'"
-
 if (-not $PassThru.IsPresent) {
     $CsvFileName = $ConnectionInfo.TenantId + '-MFA.csv'
     $CsvProps = @{
@@ -216,6 +213,22 @@ if (-not $PassThru.IsPresent) {
     }
 }
 
+$PropertyList = @(
+    'assignedLicenses'
+    'companyName'
+    'department'
+    'displayName'
+    'id'
+    'onPremisesLastSyncDateTime'
+    'userPrincipalName'
+)
+
+$UserFilter = "accountEnabled eq true and userType eq 'Member'"
+if ($Filter) {
+    $UserFilter = $UserFilter, $Filter -join ' and '
+    Write-Verbose -Message ('Using filter: {0}' -f $UserFilter)
+}
+
 $MGUserProps = @{
     Filter   = $UserFilter
     Property = $PropertyList -join ','
@@ -225,6 +238,11 @@ if ($Top) {
     $MGUserProps.Top = $Top
 } else {
     $MGUserProps.All = $true
+}
+
+if ($CountVariable) {
+    $MGUserProps.CountVariable = $CountVariable
+    $MGUserProps.ConsistencyLevel = 'eventual'
 }
 
 Get-MgUser @MGUserProps |
