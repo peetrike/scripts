@@ -2,7 +2,7 @@
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Reports, Microsoft.Graph.Users
 
 <#PSScriptInfo
-    .VERSION 3.1.0
+    .VERSION 3.1.1
     .GUID cdcc21f2-2d08-4d7b-9cf3-524ab2781cd8
 
     .AUTHOR Meelis Nigols
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [3.1.1] - 2023.10.18 - Add back v1 module beta endpoint support.
         [3.1.0] - 2023.10.17 - Add -Filter and -CountVariable parameters.
         [3.0.0] - 2023.10.16 - Refactor script to use v2 Microsoft.Graph modules.
                              - Add -Top parameter
@@ -212,6 +213,13 @@ if (-not $PassThru.IsPresent) {
         Remove-Item -Path $CsvProps.Path
     }
 }
+
+$ModuleVersion = (Get-Module -Name Microsoft.Graph.Authentication).Version
+if ($ModuleVersion.Major -lt 2 -and (Get-MgProfile).Name -like 'v1.0') {
+    Write-Verbose -Message 'Switching to Beta endpoint'
+    Select-MgProfile -Name beta
+}
+
 
 $PropertyList = @(
     'assignedLicenses'
