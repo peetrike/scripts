@@ -8,7 +8,7 @@
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2022.  All rights reserved.
 
-    .TAGS nps, logon, event
+    .TAGS nps logon event
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI
