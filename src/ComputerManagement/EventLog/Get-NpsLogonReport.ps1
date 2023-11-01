@@ -1,7 +1,7 @@
 ﻿#Requires -Version 3.0
 
 <#PSScriptInfo
-    .VERSION 0.1.2
+    .VERSION 0.1.3
     .GUID 47266bc4-ca5d-418d-b7a2-44f05b26ea05
 
     .AUTHOR Peter Wawa
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.1.3] - 2023-03-24 - Add RADIUS Client IP
         [0.1.1] - 2023-03-24 - Add Authentication type
         [0.1.0] - 2023-03-24 - Remove dependency from ActiveDirectory module
         [0.0.1] - 2022-11-10 - Initial release
@@ -101,20 +102,21 @@ $xPathFilter += ']]'
 
 Write-Verbose -Message ("Using filter:`n{0}" -f $xPathFilter)
 
-Get-WinEvent -FilterXPath $xPathFilter | ForEach-Object {
+Get-WinEvent -LogName Security -FilterXPath $xPathFilter | ForEach-Object {
     $currentEvent = $_
     $XmlEvent = [xml] $currentEvent.ToXml()
     $LogonObjectPath = $xmlEvent.SelectSingleNode('//*[@Name = "FullyQualifiedSubjectUserName"]').InnerText
 
     $eventProps = @{
-        TimeCreated     = $currentEvent.TimeCreated
-        Id              = $currentEvent.Id
-        LogonObjectPath = $LogonObjectPath
-        UserLogon       = $xmlEvent.SelectSingleNode('//*[@Name = "SubjectUserName"]').InnerText
-        RadiusClient    = $xmlEvent.SelectSingleNode('//*[@Name = "ClientName"]').InnerText
-        Result          = $xmlEvent.SelectSingleNode('//*[@Name = "Reason"]').InnerText
-        CallingStation  = $xmlEvent.SelectSingleNode('//*[@Name = "CallingStationID"]').InnerText
-        AuthType        = $xmlEvent.SelectSingleNode('//*[@Name = "AuthenticationType"]').InnerText
+        TimeCreated      = $currentEvent.TimeCreated
+        Id               = $currentEvent.Id
+        LogonObjectPath  = $LogonObjectPath
+        UserLogon        = $xmlEvent.SelectSingleNode('//*[@Name = "SubjectUserName"]').InnerText
+        RadiusClientName = $xmlEvent.SelectSingleNode('//*[@Name = "ClientName"]').InnerText
+        RadiusClientIP   = $xmlEvent.SelectSingleNode('//*[@Name = "ClientIPAddress"]').InnerText
+        Result           = $xmlEvent.SelectSingleNode('//*[@Name = "Reason"]').InnerText
+        CallingStation   = $xmlEvent.SelectSingleNode('//*[@Name = "CallingStationID"]').InnerText
+        AuthType         = $xmlEvent.SelectSingleNode('//*[@Name = "AuthenticationType"]').InnerText
     }
 
     $eventProps.UserName = switch -Regex ($LogonObjectPath) {
