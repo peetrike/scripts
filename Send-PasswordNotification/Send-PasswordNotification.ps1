@@ -2,12 +2,12 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.7.2
+    .VERSION 1.7.3
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
-    .COPYRIGHT (c) 2022 Peter Wawa.  All rights reserved.
+    .COPYRIGHT (c) 2024 Peter Wawa.  All rights reserved.
 
     .TAGS password e-mail email notification Windows PSEdition_Desktop PSEdition_Core
 
@@ -132,8 +132,10 @@ if ($PSCmdlet.ParameterSetName -like 'Version') {
     }
 }
 
+$ConfigFile = Resolve-Path -Path $ConfigFile
 Write-Verbose -Message "Loading Config file: $ConfigFile"
-$conf = [xml](Get-Content -Path $ConfigFile)
+$conf = [xml] ''
+$conf.Load($ConfigFile)
 
 $AdDomain = Get-ADDomain
 $mailSettings = @{
