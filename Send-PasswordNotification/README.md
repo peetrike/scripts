@@ -28,7 +28,10 @@ By default, the script expects that configuration file name is same as script
 name and extension is _.config_.  If different name is used, then `-ConfigFile`
 parameter should be used when running the script.
 
-The configuration file contains next configuration elements
+> NOTE: The config file encoding should match the [XML declaration](https://www.w3.org/TR/xml/#charencoding).
+> Otherwise the loading fails and script stops running.
+
+The configuration file contains following configuration elements.
 
 ### OU
 
