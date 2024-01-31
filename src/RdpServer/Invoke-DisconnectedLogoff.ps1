@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.1.0
+    .VERSION 1.2.0
 
     .GUID 5a6d1359-df01-4607-aead-111495452518
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.2.0] - 2024.01.24 - Add -IdleMax filter to ignore sessions with lower idle time
         [1.1.0] - 2024.01.24 - Convert IdleTime to [timespan]
         [1.0.3] - 2024.01.24 - When converting logon time, try using en-us culture first
         [1.0.2] - 2022.05.27 - Fix obtaining Session Name
@@ -39,7 +40,10 @@
 #>
 
 [CmdLetBinding()]
-Param(
+param (
+        [timespan]
+        # maximum allowed idle time
+    $IdleMax,
         [string]
         # Specifies log file path
     $LogFilePath
@@ -47,7 +51,7 @@ Param(
 
 function Write-Log {
     [CmdletBinding(SupportsShouldProcess = $True)]
-    Param(
+    param (
             [Parameter(Position = 0, ValueFromPipeline = $true)]
             [String]
         $Message,
@@ -99,14 +103,14 @@ function Get-RdpUserSession {
     param (
             [ValidateSet('Active', 'Disconnected')]
             [string]
-        $State
+        $State,
+            [timespan]
+        $IdleMax
     )
 
     $FilteredState = $State
     if ($State -like 'Disconnected') {
         $FilteredState = 'Disc'
-    } else {
-        Write-Verbose -Message 'No logged on user sessions exist'
     }
 
     $queryResults = query.exe user 2> $null
@@ -118,55 +122,73 @@ function Get-RdpUserSession {
             IdleTime    = $Header.IndexOf('IDLE TIME')
             LogonTime   = $Header.IndexOf('LOGON TIME')
         }
+    } else {
+        Write-Verbose -Message 'No logged on user sessions exist'
     }
+
     foreach ($result in $queryResults | Select-Object -Skip 1) {
+        $SessionUserName = $result.Substring(1, $result.Trim().Indexof(' ')).TrimEnd()
+        Write-Verbose -Message ('Processing session {0}' -f $SessionUserName)
+
         $SessionState = $result.Substring($starters.State, $starters.IdleTime - $starters.State).trim()
         if ((-not $State) -or ($SessionState -like $FilteredState)) {
-            $SessionUserName = $result.Substring(1, $result.Trim().Indexof(' ')).TrimEnd()
-            Write-Verbose -Message ('Processing session {0}' -f $SessionUserName)
-
-            $EndOfSessionName = $result.IndexOf(' ', $starters.SessionName)
             $IdleString = $result.Substring(
                 $starters.IdleTime, $starters.LogonTime - $starters.IdleTime
             ).trim()
-            New-Object psobject -Property @{
-                SessionName = $result.Substring(
-                    $starters.SessionName, $EndOfSessionName - $starters.SessionName
-                )
-                Username    = $SessionUserName
-                ID          = $result.Substring(
-                    $EndOfSessionName, $starters.State - $EndOfSessionName
-                ).trim() -as [int]
-                State       = $SessionState
-                IdleTime    = switch -Regex ($IdleString) {
-                    { $_ -as [int] } { New-TimeSpan -Minutes $_ }
-                    '^(\d{1,2}):(\d{1,2})' {
-                        New-TimeSpan -Hours $Matches[1] -Minutes $Matches[2]
-                    }
-                    '^(\d+)\+(\d{1,2}):(\d{1,2})' {
-                        New-TimeSpan -Days $Matches[1] -Hours $Matches[2] -Minutes $Matches[3]
-                    }
-                    default { [timespan] 0 }
+            $IdleTime = switch -Regex ($IdleString) {
+                { $_ -as [int] } { New-TimeSpan -Minutes $_ }
+                '^(\d{1,2}):(\d{1,2})' {
+                    New-TimeSpan -Hours $Matches[1] -Minutes $Matches[2]
                 }
-                LogonTime   = try {
-                    [datetime] $result.Substring($starters.LogonTime)
-                } catch {
-                    [datetime]::Parse($result.Substring($starters.LogonTime))
+                '^(\d+)\+(\d{1,2}):(\d{1,2})' {
+                    New-TimeSpan -Days $Matches[1] -Hours $Matches[2] -Minutes $Matches[3]
                 }
+                default { [timespan] 0 }
             }
+
+            if ((-not $IdleMax) -or ($IdleMax -lt $IdleTime)) {
+                $EndOfSessionName = $result.IndexOf(' ', $starters.SessionName)
+                New-Object psobject -Property @{
+                    SessionName = $result.Substring(
+                        $starters.SessionName, $EndOfSessionName - $starters.SessionName
+                    )
+                    Username    = $SessionUserName
+                    ID          = $result.Substring(
+                        $EndOfSessionName, $starters.State - $EndOfSessionName
+                    ).trim() -as [int]
+                    State       = $SessionState
+                    IdleTime    = $IdleTime
+                    LogonTime   = try {
+                        [datetime] $result.Substring($starters.LogonTime)
+                    } catch {
+                        [datetime]::Parse($result.Substring($starters.LogonTime))
+                    }
+                }
+            } else {
+                Write-Verbose -Message ('Idle Filter applied: {0}' -f $IdleTime)
+            }
+        } else {
+            Write-Verbose ('State Filter applied')
         }
     }
 }
 
 if (-not $LogFilePath) {
-    $DesktopPath = [System.Environment]::GetFolderPath("Desktop")
+    $DesktopPath = [Environment]::GetFolderPath('Desktop')
     $LogFileName = 'sessions_{0}.log' -f [datetime]::now.ToString('s').Replace(':', '.')
-    $LogFilePath = join-path -Path $DesktopPath -ChildPath $LogFileName
+    $LogFilePath = Join-Path -Path $DesktopPath -ChildPath $LogFileName
+}
+
+$RdpProps = @{
+    State = 'Disconnected'
+}
+if ($IdleMax) {
+    $RdpProps.IdleMax = $IdleMax
 }
 
 Write-Log -Message 'Disconnected Sessions CleanUp'
 Write-Log -Message '============================='
-foreach ($session in Get-RdpUserSession -State Disconnected ) {
+foreach ($session in Get-RdpUserSession @RdpProps ) {
     Write-Log -Message ('Logging off user: {0}' -f $session.Username)
     logoff.exe $session.ID
 }

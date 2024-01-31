@@ -1,14 +1,14 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.1
+    .VERSION 2.0.0
     .GUID 0391ff58-893b-4d0b-949b-3a1e32fdfa75
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
-    .TAGS environment, variable, PSEditon_Desktop, PSEdition_Core, Windows
+    .TAGS environment variable PSEditon_Desktop PSEdition_Core Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI https://github.com/peetrike/scripts
@@ -19,6 +19,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.0.0] - 2024.01.30 - Script now uses registry and non-expanded strings.
+            It also converts full paths to expand-strings, when possible.
         [1.0.1] - 2021.12.31 - Moved script to Github
         [1.0.0] - 2021.01.08 - remove redundant verbose message
         [0.0.3] - 2021.01.08 - fix problem when variable contains only 1 path
@@ -53,10 +55,12 @@
         If added path already exists, then it will be moved to beginning or end of path list.
     .LINK
         https://docs.microsoft.com/dotnet/api/system.environment.setenvironmentvariable
+    .LINK
+
 #>
 
 [CmdletBinding(
-    SupportsShouldProcess=$true
+    SupportsShouldProcess = $true
 )]
 
 param (
@@ -92,17 +96,72 @@ function Test-IsAdmin {
     ([Security.Principal.WindowsPrincipal] $CurrentUser).IsInRole($Role)
 }
 
+function Update-Value {
+    [CmdletBinding()]
+    param (
+            [Parameter(
+                Mandatory,
+                ValueFromPipeline
+            )]
+            [string]
+        $Value
+    )
+
+    begin {
+        $Pattern = Get-ChildItem -Path env: |
+            Where-Object Name -NotMatch '^(PSModule)?Path$' |
+            Where-Object Value -match '^[a-z]:\\' |
+            Where-Object { Test-Path -Path $_.Value -PathType Container } |
+            Sort-Object Value -Unique
+    }
+
+    process {
+        $Found = $false
+        foreach ($p in $Pattern) {
+            if ($Value -like ('{0}\*' -f $p.Value) ) {
+                $Escaped = '%{0}%' -f $p.Key
+                Write-Verbose -Message ('Escaped: {0}' -f $Escaped) -Verbose
+                $Value.Replace($p.Value, $Escaped)
+                $Found = $true
+                break
+            }
+        }
+        if (-not $Found) {
+            $Value
+        }
+    }
+}
+
+if (($Target -eq [EnvironmentVariableTarget]::Machine) -and -not (Test-IsAdmin)) {
+    throw [Management.Automation.PSSecurityException] 'Admin Privileges required'
+}
 $PathSeparator = [IO.Path]::PathSeparator
-[object[]]$OldList = [environment]::GetEnvironmentVariable($Variable, $Target ) -split $PathSeparator |
-    Where-Object { $_ -and ($_ -ne $Value) } |
-    Select-Object -Unique
+
+[object[]]$OldList = if ($Target) {
+    $BaseKey = switch ($Target) {
+        [EnvironmentVariableTarget]::Machine { 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' }
+        [EnvironmentVariableTarget]::User { 'HKCU:\' }
+    }
+    $key = (Get-Item $BaseKey).OpenSubKey('Environment', $true)
+
+    $value = Update-Value -Value $Value
+
+    [object[]]$OldList = $key.GetValue($Variable, '', 'DoNotExpandEnvironmentNames').split($PathSeparator) |
+        Update-Value |
+        Where-Object { $_ -and ($_ -ne $Value) } |
+        Select-Object -Unique
+} else {
+    [Environment]::GetEnvironmentVariable($Variable, $Target).Split($PathSeparator) |
+        Where-Object { $_ -and ($_ -ne $Value) } |
+        Select-Object -Unique
+}
 
 if ($Operation -like 'Add') {
-        $NewList = if ($Before.IsPresent) {
-            $Value, $OldList | ForEach-Object { $_ }
-        } else {
-            $OldList + $Value
-        }
+    $NewList = if ($Before) {
+        $Value, $OldList | ForEach-Object { $_ }
+    } else {
+        $OldList + $Value
+    }
 } else {
     $NewList = $OldList # | Where-Object { $_ -ne $Value }
 }
@@ -111,8 +170,9 @@ $NewValue = $NewList -join $PathSeparator
 Write-Verbose -Message ('New value: {0}' -f $NewValue)
 
 if ($PSCmdlet.ShouldProcess($Variable, ('Modify Environment variable: operation - {0}') -f $Operation)) {
-    if (($Target -eq [EnvironmentVariableTarget]::Machine) -and -not (Test-IsAdmin)) {
-        throw [Management.Automation.PSSecurityException] 'Admin Privileges required'
+    if ($Target) {
+        $key.SetValue($Variable, $NewValue, [Microsoft.Win32.RegistryValueKind]::ExpandString)
+    } else {
+        [Environment]::SetEnvironmentVariable($Variable, $NewValue, $Target)
     }
-    [Environment]::SetEnvironmentVariable($Variable, $NewValue, $Target)
 }
