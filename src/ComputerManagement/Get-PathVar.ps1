@@ -8,7 +8,7 @@
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
-    .TAGS environment, variable, PSEditon_Desktop, PSEdition_Core, Windows
+    .TAGS environment variable PSEditon_Desktop PSEdition_Core Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI https://github.com/peetrike/scripts

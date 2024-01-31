@@ -8,7 +8,7 @@
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
 
-    .TAGS environment variable PSEditon_Desktop PSEdition_Core Windows
+    .TAGS environment variable PSEdition_Desktop PSEdition_Core Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI https://github.com/peetrike/scripts
@@ -96,7 +96,7 @@ function Test-IsAdmin {
     ([Security.Principal.WindowsPrincipal] $CurrentUser).IsInRole($Role)
 }
 
-function Update-Value {
+function Compress-Value {
     [CmdletBinding()]
     param (
             [Parameter(
@@ -110,7 +110,7 @@ function Update-Value {
     begin {
         $Pattern = Get-ChildItem -Path env: |
             Where-Object Name -NotMatch '^(PSModule)?Path$' |
-            Where-Object Value -match '^[a-z]:\\' |
+            Where-Object Value -Match '^[a-z]:\\' |
             Where-Object { Test-Path -Path $_.Value -PathType Container } |
             Sort-Object Value -Unique
     }
@@ -144,10 +144,10 @@ $PathSeparator = [IO.Path]::PathSeparator
     }
     $key = (Get-Item $BaseKey).OpenSubKey('Environment', $true)
 
-    $value = Update-Value -Value $Value
+    $value = Compress-Value-Value -Value $Value
 
     [object[]]$OldList = $key.GetValue($Variable, '', 'DoNotExpandEnvironmentNames').split($PathSeparator) |
-        Update-Value |
+        Compress-Value |
         Where-Object { $_ -and ($_ -ne $Value) } |
         Select-Object -Unique
 } else {
@@ -163,7 +163,7 @@ if ($Operation -like 'Add') {
         $OldList + $Value
     }
 } else {
-    $NewList = $OldList # | Where-Object { $_ -ne $Value }
+    $NewList = $OldList
 }
 
 $NewValue = $NewList -join $PathSeparator
