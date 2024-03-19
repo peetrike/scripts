@@ -144,9 +144,9 @@ $PathSeparator = [IO.Path]::PathSeparator
     }
     $key = (Get-Item $BaseKey).OpenSubKey('Environment', $true)
 
-    $value = Compress-Value-Value -Value $Value
+    $value = Compress-Value -Value $Value
 
-    [object[]]$OldList = $key.GetValue($Variable, '', 'DoNotExpandEnvironmentNames').split($PathSeparator) |
+    [object[]]$OldList = $key.GetValue($Variable, '', 'DoNotExpandEnvironmentNames').Split($PathSeparator) |
         Compress-Value |
         Where-Object { $_ -and ($_ -ne $Value) } |
         Select-Object -Unique
