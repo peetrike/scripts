@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.1.4
+    .VERSION 1.1.5
 
     .GUID ac2008ad-6645-45d4-84da-300e6ffdfe5e
 
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.5] - 2024.04.08 - Added Enabled and ObjectClass to report
         [1.1.4] - 2021.12.31
             - Move script to Github
             - fix pipeline input support
@@ -47,7 +48,8 @@
     .EXAMPLE
         PS C:\> Get-ADGroupReport -Filter {Name -like 'one*'} -SearchBase 'OU=Grupid,DC=firma,DC=ee'
 
-        This command finds all groups that have name starting with 'one' in OU Grupid and adds members of those groups into report.
+        This command finds all groups that have name starting with 'one' in OU Grupid
+        and reports their members into report.
 
     .EXAMPLE
         PS C:\> Get-ADOrganizationalUnit -Identity 'OU=Grupid,DC=firma,DC=ee' | Get-ADGroupReport -MemberOf
@@ -148,14 +150,34 @@ begin {
         $CsvProps.Encoding = 'utf8BOM'
     }
 
-    $Surname = @{
-        Name       = 'Surname'
-        Expression = { $_.sn }
-    }
     $GroupName = @{
         Name       = 'GroupName'
         Expression = { $Group.Name }
     }
+    $ObjectProps = @(
+        'GivenName'
+        'sn'
+        'SamAccountName'
+        'UserPrincipalName'
+        'mail'
+        'userAccountControl'
+    )
+    $SelectProps = @(
+        'Name'
+        'GivenName'
+        @{
+            Name       = 'Surname'
+            Expression = { $_.sn }
+        }
+        'SamAccountName'
+        'UserPrincipalName'
+        'mail'
+        'ObjectClass'
+        @{
+            Name       = 'Enabled'
+            Expression = { -not ($_.userAccountControl -band 2) }
+        }
+    )
 }
 
 process {
@@ -189,8 +211,8 @@ process {
                 $MemberProps.Recursive = $true
             }
             Get-ADGroupMember @MemberProps |
-                Get-ADObject -Properties GivenName, sn, SamAccountName, UserPrincipalName, mail |
-                Select-Object -Property Name, GivenName, $Surname, SamAccountName, UserPrincipalName, mail
+                Get-ADObject -Properties $ObjectProps |
+                Select-Object -Property $SelectProps
         }
 
         switch ($OutputType) {
