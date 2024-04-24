@@ -3,7 +3,7 @@
 #Requires -RunAsAdministrator
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.0.2
     .GUID 4f0f23da-46ea-462c-97ce-93d3b6319811
 
     .AUTHOR Peter Wawa
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.2] - 2024-04-24 - Put PSResourceGet module name into variable
         [0.0.1] - 2024-04-24 - Initial release
 
     .PRIVATEDATA
@@ -50,13 +51,12 @@ param (
     $PSResourceGet
 )
 
+$PSResourceGetName = 'Microsoft.PowerShell.PSResourceGet'
 
-$PSResourceGetExists = Get-Module *PSResourceGet -ListAvailable
-
-if ($PSResourceGetExists) {
+if (Get-Module $PSResourceGetName -ListAvailable -ErrorAction SilentlyContinue) {
     Write-Warning -Message 'PSResourceGet already exists, skipping'
 } else {
-        # add TLS 1.2 support, if needed
+        # add TLS 1.2 support, in case it's not enabled
     [Net.ServicePointManager]::SecurityProtocol =
         [Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12
 
@@ -74,6 +74,6 @@ if ($PSResourceGetExists) {
     }
 
     if ($PSResourceGet) {
-        Install-Module Microsoft.PowerShell.PSResourceGet -Force -Repository PSGallery -Scope AllUsers
+        Install-Module $PSResourceGetName -Force -Repository PSGallery -Scope AllUsers
     }
 }
