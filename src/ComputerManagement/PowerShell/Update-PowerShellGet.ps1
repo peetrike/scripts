@@ -55,7 +55,6 @@ $PSResourceGetExists = Get-Module *PSResourceGet -ListAvailable
 
 if ($PSResourceGetExists) {
     Write-Warning -Message 'PSResourceGet already exists, skipping'
-    return
 } else {
         # add TLS 1.2 support, if needed
     [Net.ServicePointManager]::SecurityProtocol =
