@@ -1,12 +1,11 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 2.0.0
+    .VERSION 2.0.1
     .GUID 0391ff58-893b-4d0b-949b-3a1e32fdfa75
 
-    .AUTHOR Meelis Nigols
-    .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
+    .AUTHOR Peter Wawa
+    .COPYRIGHT (c) Peter Wawa 2024.  All rights reserved.
 
     .TAGS environment variable PSEdition_Desktop PSEdition_Core Windows
 
@@ -19,6 +18,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.0.0] - 2024.06.25 - Fix finding registry path.
         [2.0.0] - 2024.01.30 - Script now uses registry and non-expanded strings.
             It also converts full paths to expand-strings, when possible.
         [1.0.1] - 2021.12.31 - Moved script to Github
@@ -139,8 +139,8 @@ $PathSeparator = [IO.Path]::PathSeparator
 
 [object[]]$OldList = if ($Target) {
     $BaseKey = switch ($Target) {
-        [EnvironmentVariableTarget]::Machine { 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' }
-        [EnvironmentVariableTarget]::User { 'HKCU:\' }
+        'Machine' { 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager' }
+        'User' { 'HKCU:\' }
     }
     $key = (Get-Item $BaseKey).OpenSubKey('Environment', $true)
 
