@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 2.0.1
+    .VERSION 2.1.0
     .GUID 0391ff58-893b-4d0b-949b-3a1e32fdfa75
 
     .AUTHOR Peter Wawa
@@ -18,7 +18,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [2.0.0] - 2024.06.25 - Fix finding registry path.
+        [2.1.0] - 2024.06.25 - Remove compressing paths.
+        [2.0.1] - 2024.06.25 - Fix finding registry path.
         [2.0.0] - 2024.01.30 - Script now uses registry and non-expanded strings.
             It also converts full paths to expand-strings, when possible.
         [1.0.1] - 2021.12.31 - Moved script to Github
@@ -96,42 +97,6 @@ function Test-IsAdmin {
     ([Security.Principal.WindowsPrincipal] $CurrentUser).IsInRole($Role)
 }
 
-function Compress-Value {
-    [CmdletBinding()]
-    param (
-            [Parameter(
-                Mandatory,
-                ValueFromPipeline
-            )]
-            [string]
-        $Value
-    )
-
-    begin {
-        $Pattern = Get-ChildItem -Path env: |
-            Where-Object Name -NotMatch '^(PSModule)?Path$' |
-            Where-Object Value -Match '^[a-z]:\\' |
-            Where-Object { Test-Path -Path $_.Value -PathType Container } |
-            Sort-Object Value -Unique
-    }
-
-    process {
-        $Found = $false
-        foreach ($p in $Pattern) {
-            if ($Value -like ('{0}\*' -f $p.Value) ) {
-                $Escaped = '%{0}%' -f $p.Key
-                Write-Verbose -Message ('Escaped: {0}' -f $Escaped) -Verbose
-                $Value.Replace($p.Value, $Escaped)
-                $Found = $true
-                break
-            }
-        }
-        if (-not $Found) {
-            $Value
-        }
-    }
-}
-
 if (($Target -eq [EnvironmentVariableTarget]::Machine) -and -not (Test-IsAdmin)) {
     throw [Management.Automation.PSSecurityException] 'Admin Privileges required'
 }
@@ -144,10 +109,7 @@ $PathSeparator = [IO.Path]::PathSeparator
     }
     $key = (Get-Item $BaseKey).OpenSubKey('Environment', $true)
 
-    $value = Compress-Value -Value $Value
-
     [object[]]$OldList = $key.GetValue($Variable, '', 'DoNotExpandEnvironmentNames').Split($PathSeparator) |
-        Compress-Value |
         Where-Object { $_ -and ($_ -ne $Value) } |
         Select-Object -Unique
 } else {
