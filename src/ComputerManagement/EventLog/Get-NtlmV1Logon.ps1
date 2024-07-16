@@ -23,10 +23,11 @@ Write-Verbose -Message ('Using Query: {0}' -f $XPathQuery)
 $EventList = Get-WinEvent -FilterXPath $XPathQuery -LogName 'Security' -ErrorAction SilentlyContinue
 
 if ($AsInt.IsPresent) {
-    ($eventlist | Measure-Object).Count
+    ($EventList | Measure-Object).Count
 } else {
+    Write-Verbose -Message ('Exporting {0} logon events' -f $EventList.Count)
     try {
-        $null = [logonType]::Interactive
+        $null = [LogonType]::Interactive
     } catch {
         Add-Type -TypeDefinition @'
             public enum LogonType {
