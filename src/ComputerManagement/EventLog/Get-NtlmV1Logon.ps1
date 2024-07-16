@@ -1,4 +1,3 @@
-#Requires -Version 3
 [CmdletBinding()]
 param (
         [int]
@@ -13,7 +12,7 @@ $milliSeconds = $Hours * 3600 * 1000
 $Query = @(
     'System[(EventID = 4624) and TimeCreated[timediff(@SystemTime) <= {0}]]' -f $milliSeconds
     'EventData[Data[@Name = "LmPackageName"] = "NTLM V1"]'
-    if (-not $IncludeAnonymous.IsPresent) {
+    if (-not $IncludeAnonymous) {
         'EventData[Data[@Name="TargetUserName"] != "ANONYMOUS LOGON"]'
     }
 ) -join ' and '
@@ -26,13 +25,37 @@ $EventList = Get-WinEvent -FilterXPath $XPathQuery -LogName 'Security' -ErrorAct
 if ($AsInt.IsPresent) {
     ($eventlist | Measure-Object).Count
 } else {
-    $EventList | ForEach-Object {
-        [PSCustomObject] @{
-            Time               = $_.TimeCreated
-            UserName           = $_.Properties[5].Value
-            ComputerName       = $_.Properties[11].Value
-            LogonType          = $_.Properties[8].Value
-            ImpersonationLevel = $_.Properties[20].Value
+    try {
+        $null = [logonType]::Interactive
+    } catch {
+        Add-Type -TypeDefinition @'
+            public enum LogonType {
+                Interactive = 2,
+                Network,
+                Batch,
+                Service,
+                Unlock = 7,
+                NetworkClearText,
+                NewCredentials,
+                RemoteInteractive,
+                CachedInteractive
+            }
+'@
+    }
+
+    foreach ($currentEvent in $EventList)  {
+        $xmlEvent = [xml] $currentEvent.ToXml()
+        $logonType = $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
+        New-Object -TypeName psobject -Property @{
+            Time          = $currentEvent.TimeCreated
+            UserName      = '{1}\{0}' -f $XmlEvent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText,
+                $XmlEvent.SelectSingleNode('//*[@Name = "TargetDomainName"]').InnerText
+            UserSid       = $xmlEvent.SelectSingleNode('//*[@Name = "TargetUserSid"]').InnerText
+            Computer      = $xmlEvent.SelectSingleNode('//*[@Name = "WorkstationName"]').InnerText
+            IP            = $xmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
+            ProcessName   = $xmlEvent.SelectSingleNode('//*[@Name = "ProcessName"]').InnerText
+            Impersonation = $xmlEvent.SelectSingleNode('//*[@Name = "ImpersonationLevel"]').InnerText
+            LogonType     = [LogonType] $logonType
         }
     }
 }
