@@ -61,7 +61,9 @@ param (
         [Alias('EndTime')]
         [datetime]
         # Specifies end time of events
-    $Before
+    $Before,
+        [switch]
+    $LocalOnly
 )
 
 $EventList = @(
@@ -149,7 +151,8 @@ $xmlFilter = "<QueryList>
   </Query>
 </QueryList>" -f $xPathFilter
 
-foreach ($dc in Get-ADDomainController -Filter *) {
+$DcFilter = if ($LocalOnly) { "Name -like '$env:COMPUTERNAME'" } else { '*' }
+foreach ($dc in Get-ADDomainController -Filter $DCFilter) {
     Write-Verbose -Message ('Connecting with {0}' -f $dc.Name)
     Get-WinEvent -FilterXml $xmlFilter -ComputerName $dc.HostName | ForEach-Object {
         $CurrentEvent = $_
