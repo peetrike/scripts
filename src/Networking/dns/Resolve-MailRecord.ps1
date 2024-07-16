@@ -71,6 +71,7 @@ Param(
 
 process {
     foreach ($SingleName in $Name) {
+        Write-Verbose -Message ('Processing name: {0}' -f $SingleName)
         $result = Get-Dns -Name $SingleName -Type MX
         $result.Answer
         $result.Additional
