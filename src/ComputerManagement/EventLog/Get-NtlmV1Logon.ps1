@@ -44,9 +44,8 @@ if ($AsInt.IsPresent) {
 '@
     }
 
-    foreach ($currentEvent in $EventList)  {
+    foreach ($currentEvent in $EventList) {
         $xmlEvent = [xml] $currentEvent.ToXml()
-        $logonType = $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
         New-Object -TypeName psobject -Property @{
             Time          = $currentEvent.TimeCreated
             UserName      = '{1}\{0}' -f $XmlEvent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText,
@@ -56,7 +55,7 @@ if ($AsInt.IsPresent) {
             IP            = $xmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
             ProcessName   = $xmlEvent.SelectSingleNode('//*[@Name = "ProcessName"]').InnerText
             Impersonation = $xmlEvent.SelectSingleNode('//*[@Name = "ImpersonationLevel"]').InnerText
-            LogonType     = [LogonType] $logonType
+            LogonType     = [LogonType] $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
         }
     }
 }
