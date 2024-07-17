@@ -23,10 +23,11 @@ Write-Verbose -Message ('Using Query: {0}' -f $XPathQuery)
 $EventList = Get-WinEvent -FilterXPath $XPathQuery -LogName 'Security' -ErrorAction SilentlyContinue
 
 if ($AsInt.IsPresent) {
-    ($eventlist | Measure-Object).Count
+    ($EventList | Measure-Object).Count
 } else {
+    Write-Verbose -Message ('Exporting {0} logon events' -f $EventList.Count)
     try {
-        $null = [logonType]::Interactive
+        $null = [LogonType]::Interactive
     } catch {
         Add-Type -TypeDefinition @'
             public enum LogonType {
@@ -43,9 +44,8 @@ if ($AsInt.IsPresent) {
 '@
     }
 
-    foreach ($currentEvent in $EventList)  {
+    foreach ($currentEvent in $EventList) {
         $xmlEvent = [xml] $currentEvent.ToXml()
-        $logonType = $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
         New-Object -TypeName psobject -Property @{
             Time          = $currentEvent.TimeCreated
             UserName      = '{1}\{0}' -f $XmlEvent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText,
@@ -55,7 +55,7 @@ if ($AsInt.IsPresent) {
             IP            = $xmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
             ProcessName   = $xmlEvent.SelectSingleNode('//*[@Name = "ProcessName"]').InnerText
             Impersonation = $xmlEvent.SelectSingleNode('//*[@Name = "ImpersonationLevel"]').InnerText
-            LogonType     = [LogonType] $logonType
+            LogonType     = [LogonType] $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
         }
     }
 }
