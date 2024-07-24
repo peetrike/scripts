@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.3.3
+    .VERSION 0.0.1
     .GUID feb5f118-5458-4cc1-bbe8-8544a479a321
 
     .AUTHOR Peter Wawa
