@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.0.2
+    .VERSION 0.0.3
     .GUID feb5f118-5458-4cc1-bbe8-8544a479a321
 
     .AUTHOR Peter Wawa
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.3] - 2024-07-25 - Extend the exceptions.
         [0.0.2] - 2024-07-25 - Use Set-ADUser -Add to add new proxy addresses.
         [0.0.1] - 2024-07-24 - Initial release
 
@@ -78,9 +79,11 @@ param (
         [ValidateScript({
             if ($_ -match '^([\w-]+\.)+[\w-]+$') { $true }
             else {
+                $Message = 'Invalid domain name'
+                $ParameterName = 'Domain'
                 $Exception = New-Object -TypeName 'System.ArgumentException' -ArgumentList @(
-                    'Please provide valid domain name'
-                    'Domain'
+                    $Message
+                    $ParameterName
                 )
                 $ErrorRecord = New-Object -TypeName 'System.Management.Automation.ErrorRecord' -ArgumentList @(
                     $Exception
@@ -88,6 +91,9 @@ param (
                     [Management.Automation.ErrorCategory]::InvalidData
                     $_
                 )
+                $ErrorRecord.ErrorDetails = $Message
+                $ErrorRecord.ErrorDetails.RecommendedAction = 'Please provide valid domain name'
+                $ErrorRecord.CategoryInfo.TargetName = $ParameterName
                 $PSCmdlet.ThrowTerminatingError($ErrorRecord)
             }
         })]
@@ -105,18 +111,18 @@ process {
         } elseif ($User.mail) {
             $NewAddress = ($User.mail -replace '@.*', ('@' + $Domain))
         } else {
-            $ErrorProps = @{
-                Message            =
-                    'The user account "{0}" does not have default mail address' -f $User.UserPrincipalName
-                Category           = [System.Management.Automation.ErrorCategory]::ObjectNotFound
-                ErrorId            = 'MissingEmailAddress'
-                TargetObject       = $User
-                RecommendedAction  = 'Add primary e-mail address for user'
-                #CategoryActivity   = $CategoryActivity
-                CategoryTargetName = 'User account'
-                CategoryTargetType = $User.GetType()
-            }
-            Write-Error @ErrorProps
+            $Message = 'The user account "{0}" does not have default mail address' -f $User.UserPrincipalName
+            $ErrorRecord = New-Object -TypeName 'System.Management.Automation.ErrorRecord' -ArgumentList @(
+                [Management.Automation.RuntimeException] $Message
+                'MissingEmailAddress'
+                [System.Management.Automation.ErrorCategory]::ObjectNotFound
+                $User
+            )
+            $ErrorRecord.ErrorDetails = $Message
+            $ErrorRecord.ErrorDetails.RecommendedAction = 'Add primary e-mail address for user'
+            $ErrorRecord.CategoryInfo.TargetName = 'User account'
+
+            $PSCmdlet.WriteError($ErrorRecord)
             continue
         }
 
