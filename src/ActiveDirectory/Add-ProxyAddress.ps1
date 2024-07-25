@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.0.2
     .GUID feb5f118-5458-4cc1-bbe8-8544a479a321
 
     .AUTHOR Peter Wawa
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.2] - 2024-07-25 - Use Set-ADUser -Add to add new proxy addresses.
         [0.0.1] - 2024-07-24 - Initial release
 
     .PRIVATEDATA
@@ -30,7 +31,8 @@
         Add new e-mail address with new domain to ProxyAddresses
     .DESCRIPTION
         This script constructs new e-mail address from current default in ProxyAddresses
-        and adds it as a new address.
+        and adds it as a new address.  If mail property contains e-mail that is
+        not in the ProxyAddresses list, it is added as well.
     .EXAMPLE
         Add-ProxyAddress.ps1 -Identity username -Domain 'domain.com'
 
@@ -117,18 +119,18 @@ process {
             Write-Error @ErrorProps
             continue
         }
+
         $NewList = @(
-            $ProxyList
-            'smtp:' + $NewDefault
+            'smtp:' + $NewAddress
+            if (-not ($ProxyList -match $user.mail)) {
+                'smtp:' + $user.mail
+            }
         )
-        if (-not ($NewList -match $user.mail)) {
-            $NewList += 'smtp:' + $user.mail
-        }
 
             # make change
         if ($PSCmdlet.ShouldProcess($User.UserPrincipalName, 'Change default e-mail')) {
             $SetProps = @{
-                Replace = @{ proxyAddresses = $NewList }
+                Add = @{ proxyAddresses = $NewList }
             }
             Set-ADUser -Identity $User @SetProps
         }
