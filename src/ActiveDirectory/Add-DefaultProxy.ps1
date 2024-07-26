@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.3.3
+    .VERSION 0.4.0
     .GUID af691618-7b30-4bb3-8fa2-a4631c6b37c7
 
     .AUTHOR Peter Wawa
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.4.0] - 2024-07-26 - Don't replace entire list, instead remove old default and add new ones.
         [0.3.3] - 2023-10-12 - Ensure that proxy addresses are unique.
         [0.3.2] - 2023-10-11 - Add previous mail address to proxy addresses.
         [0.3.1] - 2023-10-05 - Add -WhatIf/-Confirm support.
@@ -82,9 +83,11 @@ param (
         [ValidateScript({
             if ($_ -match '^([\w-]+\.)+[\w-]+$') { $true }
             else {
+                $Message = 'Invalid domain name'
+                $ParameterName = 'Domain'
                 $Exception = New-Object -TypeName 'System.ArgumentException' -ArgumentList @(
-                    'Please provide valid domain name'
-                    'Domain'
+                    $Message
+                    $ParameterName
                 )
                 $ErrorRecord = New-Object -TypeName 'System.Management.Automation.ErrorRecord' -ArgumentList @(
                     $Exception
@@ -92,6 +95,9 @@ param (
                     [Management.Automation.ErrorCategory]::InvalidData
                     $_
                 )
+                $ErrorRecord.ErrorDetails = $Message
+                $ErrorRecord.ErrorDetails.RecommendedAction = 'Please provide valid domain name'
+                $ErrorRecord.CategoryInfo.TargetName = $ParameterName
                 $PSCmdlet.ThrowTerminatingError($ErrorRecord)
             }
         })]
@@ -109,38 +115,40 @@ process {
     foreach ($User in Get-ADUser -Identity $Identity -Properties mail, proxyAddresses) {
         $ProxyList = $User.proxyAddresses
         $DefaultAddress = ($ProxyList -cmatch '^SMTP:')[0]      # -match returns array, if left side is array
+        $MailAddress = $User.mail -as [mailaddress]
         if ($DefaultAddress -match '^SMTP:(.*@)') {
             $NewDefault = $Matches[1] + $Domain
         } elseif ($User.mail) {
-            $NewDefault = ($User.mail -replace '@.*', ('@' + $Domain))
+            $NewAddress = '{0}@{1}' -f $MailAddress.User, $Domain
         } else {
-            $ErrorProps = @{
-                Message            =
-                    'The user account "{0}" does not have default mail address' -f $User.UserPrincipalName
-                Category           = [System.Management.Automation.ErrorCategory]::ObjectNotFound
-                ErrorId            = 'MissingEmailAddress'
-                TargetObject       = $User
-                RecommendedAction  = 'Add primary e-mail address for user'
-                #CategoryActivity   = $CategoryActivity
-                CategoryTargetName = 'User account'
-                CategoryTargetType = $User.GetType()
-            }
-            Write-Error @ErrorProps
+            $Message = 'The user account "{0}" does not have default mail address' -f $User.UserPrincipalName
+            $ErrorRecord = New-Object -TypeName 'System.Management.Automation.ErrorRecord' -ArgumentList @(
+                [Management.Automation.RuntimeException] $Message
+                'MissingEmailAddress'
+                [System.Management.Automation.ErrorCategory]::ObjectNotFound
+                $User
+            )
+            $ErrorRecord.ErrorDetails = $Message
+            $ErrorRecord.ErrorDetails.RecommendedAction = 'Add primary e-mail address for user'
+            $ErrorRecord.CategoryInfo.TargetName = 'User account'
+
+            $PSCmdlet.WriteError($ErrorRecord)
             continue
         }
         $NewList = @(
             'SMTP:' + $NewDefault
-            ($ProxyList | Where-Object { $_ -notlike "*$NewDefault" }) -replace '^SMTP', 'smtp'
+            $DefaultAddress -replace '^SMTP', 'smtp'
+            'smtp:' + $MailAddress.Address
         )
-        if (-not ($NewList -match $user.mail)) {
-            $NewList += 'smtp:' + $user.mail
-        }
 
             # make change
         if ($PSCmdlet.ShouldProcess($User.UserPrincipalName, 'Change default e-mail')) {
             $SetProps = @{
-                Replace      = @{ proxyAddresses = $NewList }
+                Add          = @{ proxyAddresses = $NewList }
                 EmailAddress = $NewDefault
+            }
+            if ($DefaultAddress) {
+                $SetProps.Remove = @{ proxyAddresses = $DefaultAddress }
             }
             if ($FixUPN) {
                 $SetProps.UserPrincipalName = $NewDefault
