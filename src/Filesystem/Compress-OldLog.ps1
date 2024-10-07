@@ -19,18 +19,18 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.2.1] - 2021.12.31 - Moved script to Github
-        [1.2.0] - 2020-05-04 - Now, -Months filters out files from beginning of month, not from current day in month
-        [1.1.6] - 2018-12-28 - fixed problem with Compress-Archive: archive file was deleted if no files found to compress
-        [1.1.5] - 2018-12-28 - changed 7-zip discovery and comment-based help
-        [1.1.4] - 2018-10-15 - changed 7-Zip command line and added 7-zip process exit status check
-        [1.1.3] - 2018-10-15 - changed -Days and -Months parameters
-        [1.1.2] - 2018-10-15 - changed examples in help
-        [1.1.1] - 2018-10-15 - changed lastwritetime filter for -Days parameter.  it now includes days equal or greater than -Days parameter
-        [1.1.0] - 2018-10-15 - added parameter -Months and removed parameter -Interval
-        [1.0.2] - 2018-10-15 - modified -Filter parameter
-        [1.0.1] - 2018-10-15 - modified comment-based help
-        [1.0.0] - 2018-10-15 - Initial release
+        [1.2.1] 2021-12-31 - Moved script to Github
+        [1.2.0] 2020-05-04 - Now, -Months filters out files from beginning of month, not from current day in month
+        [1.1.6] 2018-12-28 - fixed problem with Compress-Archive: archive file was deleted if no files found to compress
+        [1.1.5] 2018-12-28 - changed 7-zip discovery and comment-based help
+        [1.1.4] 2018-10-15 - changed 7-Zip command line and added 7-zip process exit status check
+        [1.1.3] 2018-10-15 - changed -Days and -Months parameters
+        [1.1.2] 2018-10-15 - changed examples in help
+        [1.1.1] 2018-10-15 - changed lastwritetime filter for -Days parameter.  It now includes days equal or greater than -Days parameter
+        [1.1.0] 2018-10-15 - added parameter -Months and removed parameter -Interval
+        [1.0.2] 2018-10-15 - modified -Filter parameter
+        [1.0.1] 2018-10-15 - modified comment-based help
+        [1.0.0] 2018-10-15 - Initial release
 
     .PRIVATEDATA
 #>
@@ -67,12 +67,12 @@
 #>
 
 [CmdLetBinding()]
-Param(
-        [parameter(
+param (
+        [Parameter(
             ValueFromPipeline=$true,
             ValueFromPipelineByPropertyName=$true
         )]
-        [ValidateScript( {
+        [ValidateScript({
             if (Test-Path -Path $_) { $true }
             else {
                 throw (New-Object -TypeName 'System.Management.Automation.ItemNotFoundException' -ArgumentList "Path not found: $_")
@@ -122,7 +122,7 @@ begin {
         throw (New-Object -TypeName 'System.Management.Automation.ItemNotFoundException' -ArgumentList 'No archiver detected, aborting')
     }
 
-    Write-Verbose -Message ('Using archiver: {0}' -f $archiver)
+    Write-Verbose -Message ('Using compression tool: {0}' -f $archiver)
     $DirParams = @{ }
     if ($Filter) {
         $DirParams.Filter = $Filter
@@ -132,7 +132,7 @@ begin {
     }
     if ($PSCmdlet.ParameterSetName -eq 'Months') {
         $MonthsAgo = ([datetime]::Today).AddMonths(-$Months)
-        $MonthsAgo = $MonthsAgo.AddDays(1-$MonthsAgo.Day)
+        $MonthsAgo = $MonthsAgo.AddDays(1 - $MonthsAgo.Day)
         $DateFilter = { $_.LastWriteTime -le $MonthsAgo }
         $archiveFileName = '{0:yyyy-MM}.zip' -f $MonthsAgo.AddMonths(-1)
     } else {
