@@ -8,15 +8,25 @@ param (
         [string]
     $Destination,
         [int]
-    $DaysAgo = 90
+    $DaysAgo = 90,
+        [switch]
+    $IncludeServer,
+        [switch]
+    $UsePwdDate
 )
 
 $startDate = (Get-Date).AddDays(-$DaysAgo)
-$filter = {
-    LastLogonDate -lt $startDate -and
-    OperatingSystem -notlike '*server*' -and
-    Enabled -eq $true
-}
+
+$filter = @(
+    'Enabled -eq $true'
+    if ($UsePwdDate) {
+        'PasswordLastSet -lt $startDate'
+    } else {
+        'LastLogonDate -lt $startDate'
+    }
+    if (-not $IncludeServer) { 'OperatingSystem -notlike "*Server*"' }
+) -join ' -and '
+
 $propertyList = @(
     'OperatingSystem'
     'LastLogonDate'
