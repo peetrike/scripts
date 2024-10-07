@@ -131,10 +131,13 @@ begin {
         $DirParams.Recurse = $true
     }
     if ($PSCmdlet.ParameterSetName -eq 'Months') {
-        $MonthsAgo = ([datetime]::Today).AddMonths(-$Months)
-        $MonthsAgo = $MonthsAgo.AddDays(1 - $MonthsAgo.Day)
+        $Today = [datetime]::Today
+            # log file for current day is saved next day.  Add a second to compensate
+        $MonthsAgo = $Today.AddMonths(-$Months).AddDays(1 - $Today.Day).AddSeconds(1)
+            # adjust time to UTC (when logs are saved based on UTC time)
+        $MonthsAgo = [datetime] ($MonthsAgo.ToString('s') + 'Z')
         $DateFilter = { $_.LastWriteTime -le $MonthsAgo }
-        $archiveFileName = '{0:yyyy-MM}.zip' -f $MonthsAgo.AddMonths(-1)
+        $archiveFileName = '{0:yyyy-MM}.zip' -f $MonthsAgo.AddDays(-1)
     } else {
         $DateFilter = { ($_ | New-TimeSpan).Days -ge $Days }
         $archiveFileName = '{0:yyyy-MM-dd}.zip' -f ([datetime]::Now).AddDays(-$Days)
