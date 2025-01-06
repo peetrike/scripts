@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.0
+    .VERSION 1.0.1
 
     .GUID af8dbac7-6403-4aab-81ae-8798f0aead47
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.1] - 2025.01.06 - Refactored script to use Hashtable filter for events
         [1.0.0] - 2023.11.23 - Initial Release
 
     .PRIVATEDATA
@@ -36,7 +37,7 @@
         This example generates report of runas events for today.  Result
         is displayed in Grid View.
     .EXAMPLE
-        .\Get-RunAsReport.ps1 -Type Failure, Logon | Export-Csv -UseCulture -Path logonreport.csv
+        .\Get-RunAsReport.ps1 | Export-Csv -UseCulture -Path logonreport.csv
 
         This example generates report of runas events.
         The result is saved as .csv file
@@ -56,32 +57,21 @@ param (
     $Before
 )
 
-function stringTime {
-    param (
-            [datetime]
-        $time
-    )
 
-    $time.ToUniversalTime().ToString('o')
+$EventFilter = @{
+    LogName = 'Security'
+    ID      = 4648
+}
+if ($After) {
+    $EventFilter.StartTime = $After
+}
+if ($Before) {
+    $EventFilter.EndTime = $Before
 }
 
-$xPathFilter = '*[System[(EventID=4648)'
-if ($After -or $Before) {
-    $xPathFilter += ' and TimeCreated[@SystemTime'
-    if ($After) {
-        $xPathFilter += " >= '{0}'" -f (stringTime $After)
-        if ($Before) { $xPathFilter += ' and @SystemTime' }
-    }
-    if ($Before) {
-        $xPathFilter += " <= '{0}'" -f (stringTime $Before)
-    }
-    $xPathFilter += ']'
-}
-$xPathFilter += ']]'
+Write-Debug -Message ("Using filter:`n{0}" -f ($EventFilter | Out-String))
 
-Write-Debug -Message ("Using filter:`n{0}" -f $xPathFilter)
-
-foreach ($currentEvent in Get-WinEvent -LogName Security -FilterXPath $xPathFilter) {
+foreach ($currentEvent in Get-WinEvent -FilterHashtable $EventFilter) {
     $XmlEvent = [xml] $currentEvent.ToXml()
     $eventProps = @{
         TimeCreated  = $currentEvent.TimeCreated
