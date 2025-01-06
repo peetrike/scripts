@@ -1,12 +1,12 @@
 ﻿#Requires -Version 3.0
 
 <#PSScriptInfo
-    .VERSION 0.1.3
+    .VERSION 0.1.4
     .GUID 47266bc4-ca5d-418d-b7a2-44f05b26ea05
 
     .AUTHOR Peter Wawa
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2022.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2025.  All rights reserved.
 
     .TAGS nps logon event
 
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.1.4] - 2025-01-06 - Refactor script to use hashtable filter for events
         [0.1.3] - 2023-03-24 - Add RADIUS Client IP
         [0.1.1] - 2023-03-24 - Add Authentication type
         [0.1.0] - 2023-03-24 - Remove dependency from ActiveDirectory module
@@ -31,7 +32,7 @@
     .SYNOPSIS
         Generate NPS logon event report
     .DESCRIPTION
-        This script extracts NPS server logon succes/failure events from Event Log
+        This script extracts NPS server logon success/failure events from Event Log
     .EXAMPLE
         Get-NpsLogonReport.ps1 -After '2022-11-10'
 
@@ -63,6 +64,27 @@ param (
     $Before
 )
 
+
+if ($Type -like 'Both') {
+    $Type = 'Failure', 'Success'
+}
+
+$EventFilter = @{
+    LogName = 'Security'
+    Id      = switch ($Type) {
+        'Failure' { 6273 }
+        'Success' { 6272 }
+    }
+}
+if ($After) {
+    $EventFilter.StartTime = $After
+}
+if ($Before) {
+    $EventFilter.EndTime = $Before
+}
+
+Write-Debug -Message ("Using filter:`n{0}" -f ($EventFilter | Out-String))
+
 function stringTime {
     param (
             [datetime]
@@ -72,17 +94,7 @@ function stringTime {
     $time.ToUniversalTime().ToString('o')
 }
 
-
-if ($Type -like 'Both') {
-    $Type = 'Failure', 'Success'
-}
-
-$EventId = switch ($Type) {
-    'Failure' { 6273 }
-    'Success' { 6272 }
-}
-
-$xPathFilter = '*[System[(' + (
+<# $xPathFilter = '*[System[(' + (
     $(
         $EventId | ForEach-Object { 'EventID={0}' -f $_ }
     ) -join ' or '
@@ -100,7 +112,7 @@ if ($After -or $Before) {
 }
 $xPathFilter += ']]'
 
-Write-Verbose -Message ("Using filter:`n{0}" -f $xPathFilter)
+Write-Verbose -Message ("Using filter:`n{0}" -f $xPathFilter) #>
 
 Get-WinEvent -LogName Security -FilterXPath $xPathFilter | ForEach-Object {
     $currentEvent = $_
