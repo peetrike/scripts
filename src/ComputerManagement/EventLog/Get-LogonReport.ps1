@@ -1,13 +1,13 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.4
+    .VERSION 1.0.5
 
     .GUID aeb78b6a-0f41-4d74-b914-4f4c26f31acb
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2020.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2025.  All rights reserved.
 
     .TAGS report, logon, event
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.5] - 2025.01.06 - Refactored script to use Hashtable filter for events
         [1.0.4] - 2023.03.21 - Added ProcessName to report
         [1.0.3] - 2022.05.27 - Changed obtaining named properties to use XPath
         [1.0.2] - 2021.12.31 - Moved script to Github
@@ -35,15 +36,21 @@
     .DESCRIPTION
         This script generates logon/logoff event report.
     .EXAMPLE
-        .\Get-LoonReport.ps1 -After ([datetime]::Today) | Out-Gridview
+        .\Get-LogonReport.ps1 -After ([datetime]::Today) | Out-GridView
 
         This example generates report of logon events for today.  Result
         is displayed in Grid View.
     .EXAMPLE
-        .\Get-LoonReport.ps1 -Type Failure, Logon | Export-Csv -UseCulture -Path logonreport.csv
+        .\Get-LogonReport.ps1 -Type Failure, Logon | Export-Csv -UseCulture -Path LogonReport.csv
 
         This example generates report of successful and failed logons.
         The result is saved as .csv file
+    .EXAMPLE
+        $result = .\Get-LogonReport.ps1 -Type Failure
+        $result | Group-Object SourceIP | Sort-Object Count -Descending | Select-Object -First 5
+
+        This example returns failed logon events.  The result is grouped by Source IP and then
+        limited to 5 most common Source IPs
     .LINK
         Get-WinEvent
 #>
@@ -92,36 +99,21 @@ $EventList = @(
     }
 )
 
-function stringTime {
-    param (
-            [datetime]
-        $time
-    )
-
-    $time.ToUniversalTime().ToString('o')
+$EventFilter = @{
+    LogName = 'Security'
+    ID      = $EventList | Where-Object { $Type -contains $_.Type } | ForEach-Object { $_.Id }
+}
+if ($After) {
+    $EventFilter.StartTime = $After
+}
+if ($Before) {
+    $EventFilter.EndTime = $Before
 }
 
-$xPathFilter = '*[System[(' + (
-    $(
-        $EventList | Where-Object { $Type -contains $_.Type } | ForEach-Object { 'EventID={0}' -f $_.Id }
-    ) -join ' or '
-) + ')'
-if ($After -or $Before) {
-    $xPathFilter += ' and TimeCreated[@SystemTime'
-    if ($After) {
-        $xPathFilter += " >= '{0}'" -f (stringTime $After)
-        if ($Before) { $xPathFilter += ' and @SystemTime' }
-    }
-    if ($Before) {
-        $xPathFilter += " <= '{0}'" -f (stringTime $Before)
-    }
-    $xPathFilter += ']'
-}
-$xPathFilter += ']]'
 
-Write-Debug -Message ("Using filter:`n{0}" -f $xPathFilter)
+Write-Debug -Message ("Using filter:`n{0}" -f ($EventFilter | Out-String))
 
-foreach ($currentEvent in Get-WinEvent -LogName Security -FilterXPath $xPathFilter) {
+foreach ($currentEvent in Get-WinEvent -FilterHashtable $EventFilter) {
     $XmlEvent = [xml] $currentEvent.ToXml()
     $LogonType = $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
     $eventProps = @{
@@ -142,7 +134,7 @@ foreach ($currentEvent in Get-WinEvent -LogName Security -FilterXPath $xPathFilt
             9 { 'NewCredentials (local impersonation process under existing connection)' }
             10 { 'RDP' }
             11 { 'CachedInteractive' }
-            default { 'LogType Not Recognised: {0}' -f $LogonType }
+            default { 'LogonType Not Recognized: {0}' -f $LogonType }
         }
     }
 
