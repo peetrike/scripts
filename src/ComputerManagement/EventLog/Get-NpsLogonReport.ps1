@@ -64,7 +64,6 @@ param (
     $Before
 )
 
-
 if ($Type -like 'Both') {
     $Type = 'Failure', 'Success'
 }
@@ -85,36 +84,7 @@ if ($Before) {
 
 Write-Debug -Message ("Using filter:`n{0}" -f ($EventFilter | Out-String))
 
-function stringTime {
-    param (
-            [datetime]
-        $time
-    )
-
-    $time.ToUniversalTime().ToString('o')
-}
-
-<# $xPathFilter = '*[System[(' + (
-    $(
-        $EventId | ForEach-Object { 'EventID={0}' -f $_ }
-    ) -join ' or '
-) + ')'
-if ($After -or $Before) {
-    $xPathFilter += ' and TimeCreated[@SystemTime'
-    if ($After) {
-        $xPathFilter += " >= '{0}'" -f (stringTime $After)
-        if ($Before) { $xPathFilter += ' and @SystemTime' }
-    }
-    if ($Before) {
-        $xPathFilter += " <= '{0}'" -f (stringTime $Before)
-    }
-    $xPathFilter += ']'
-}
-$xPathFilter += ']]'
-
-Write-Verbose -Message ("Using filter:`n{0}" -f $xPathFilter) #>
-
-Get-WinEvent -LogName Security -FilterXPath $xPathFilter | ForEach-Object {
+Get-WinEvent -FilterHashtable $EventFilter | ForEach-Object {
     $currentEvent = $_
     $XmlEvent = [xml] $currentEvent.ToXml()
     $LogonObjectPath = $xmlEvent.SelectSingleNode('//*[@Name = "FullyQualifiedSubjectUserName"]').InnerText
