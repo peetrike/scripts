@@ -27,24 +27,29 @@
 
 <#
     .SYNOPSIS
-        Dismount unloaded user profile disks
+        Dismount user profile disks.
     .DESCRIPTION
-        This script will dismount unloaded user profile disks.
+        This script will dismount specified user profile disks.
     .EXAMPLE
-        Dismount-Upd.ps1
+        Dismount-Upd.ps1 -Confirm
 
         This example dismounts all unloaded user profile disks.
+        Every dismount is confirmed.
     .EXAMPLE
         Dismount-Upd.ps1 -Path c:\path\to\upd, c:\second\path
 
         This example dismounts disk image from specific paths.
+    .PARAMETER WhatIf
+        Shows what would happen if the cmdlet runs. The cmdlet is not run.
+    .PARAMETER Confirm
+        Prompts you for confirmation before dismounting the UPD.
     .INPUTS
         None
     .OUTPUTS
         Microsoft.Management.Infrastructure.CimInstance#ROOT/Microsoft/Windows/Storage/MSFT_DiskImage
         The dismounted disk images
     .NOTES
-
+        When no path is provided, the list of unloaded user profile paths is taken.
     .LINK
         https://learn.microsoft.com/powershell/module/storage/dismount-diskimage
 #>
@@ -62,6 +67,7 @@ param (
         })]
         [SupportsWildcards()]
         [string[]]
+        # Specifies path to UPD
     $Path
 )
 
