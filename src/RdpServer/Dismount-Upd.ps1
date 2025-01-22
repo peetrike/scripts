@@ -34,6 +34,10 @@
         Dismount-Upd.ps1
 
         This example dismounts all unloaded user profile disks.
+    .EXAMPLE
+        Dismount-Upd.ps1 -Path c:\path\to\upd, c:\second\path
+
+        This example dismounts disk image from specific paths.
     .INPUTS
         None
     .OUTPUTS
@@ -56,6 +60,7 @@ param (
                 throw 'Path not found'
             }
         })]
+        [SupportsWildcards()]
         [string[]]
     $Path
 )
