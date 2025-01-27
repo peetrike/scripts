@@ -5,7 +5,7 @@
         Author      : Martin Schvartzman
         Modified by : Peter Wawa
     .LINK
-        https://docs.microsoft.com/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
+        https://learn.microsoft.com/dotnet/framework/migration-guide/how-to-determine-which-versions-are-installed
 #>
 
 [CmdletBinding()]
@@ -38,30 +38,43 @@ function Get-NetFrameworkVersion {
     $dotNet4Builds = @{
         '30319'  = @{ Version = [Version]'4.0' }
         '378389' = @{ Version = [Version]'4.5' }
-        '378675' = @{ Version = [Version]'4.5.1' ; Comment = '(8.1/2012R2)' }
-        '378758' = @{ Version = [Version]'4.5.1' ; Comment = '(8/7 SP1/Vista SP2)' }
+        '378675' = @{ Version = [Version]'4.5.1' ; Comment = '8.1/Srv12 R2' }
+        '378758' = @{ Version = [Version]'4.5.1' }
         '379893' = @{ Version = [Version]'4.5.2' }
-        '380042' = @{ Version = [Version]'4.5'   ; Comment = 'and later with KB3168275 rollup' }
-        '393295' = @{ Version = [Version]'4.6'   ; Comment = '(Windows 10)' }
-        '393297' = @{ Version = [Version]'4.6'   ; Comment = '(NON Windows 10)' }
-        '394254' = @{ Version = [Version]'4.6.1' ; Comment = '(Windows 10 1511)' }
-        '394271' = @{ Version = [Version]'4.6.1' ; Comment = '(NON Windows 10 1511)' }
-        '394802' = @{ Version = [Version]'4.6.2' ; Comment = '(Windows 10 1607/Srv16)' }
-        '394806' = @{ Version = [Version]'4.6.2' ; Comment = '(NON Windows 10 1607/Srv16)' }
-        '460798' = @{ Version = [Version]'4.7'   ; Comment = '(Windows 10 1703)' }
-        '460805' = @{ Version = [Version]'4.7'   ; Comment = '(NON Windows 10 1703)' }
-        '461308' = @{ Version = [Version]'4.7.1' ; Comment = '(Windows 10 1709)' }
-        '461310' = @{ Version = [Version]'4.7.1' ; Comment = '(NON Windows 10 1709)' }
-        '461808' = @{ Version = [Version]'4.7.2' ; Comment = '(Windows 10 1803)' }
-        '461814' = @{ Version = [Version]'4.7.2' ; Comment = '(NON Windows 10 1803)' }
-        '528040' = @{ Version = [Version]'4.8.0' ; Comment = '(Windows 10 1903/1909)' }
-        '528049' = @{ Version = [Version]'4.8.0' ; Comment = '(Non Windows 10 1903 or newer)' }
-        '528372' = @{ Version = [Version]'4.8.0' ; Comment = '(Windows 10 2004 or newer)' }
-        '528449' = @{ Version = [Version]'4.8.0' ; Comment = '(Windows 11 / Server 2022)' }
+        '393295' = @{ Version = [Version]'4.6.0' ; Comment = 'Windows 10' }
+        '393297' = @{ Version = [Version]'4.6.0' }
+        '394254' = @{ Version = [Version]'4.6.1' ; Comment = 'Windows 10 1511' }
+        '394271' = @{ Version = [Version]'4.6.1' }
+        '394802' = @{ Version = [Version]'4.6.2' ; Comment = 'Windows 10 1607/Srv16' }
+        '394806' = @{ Version = [Version]'4.6.2' }
+        '460798' = @{ Version = [Version]'4.7.0' ; Comment = 'Windows 10 1703' }
+        '460805' = @{ Version = [Version]'4.7.0' }
+        '461308' = @{ Version = [Version]'4.7.1' ; Comment = 'Windows 10 1709' }
+        '461310' = @{ Version = [Version]'4.7.1' }
+        '461808' = @{ Version = [Version]'4.7.2' ; Comment = 'Windows 10 1803' }
+        '461814' = @{ Version = [Version]'4.7.2' }
+        '528040' = @{ Version = [Version]'4.8.0' ; Comment = 'Windows 10 1903/1909' }
+        '528049' = @{ Version = [Version]'4.8.0' }
+        '528372' = @{ Version = [Version]'4.8.0' ; Comment = 'Windows 10 2004 or newer' }
+        '528449' = @{ Version = [Version]'4.8.0' ; Comment = 'Windows 11/Srv22' }
+        '533320' = @{ Version = [Version]'4.8.1' ; Comment = 'Windows 11 22H2' }
+        '533325' = @{ Version = [Version]'4.8.1' }
     }
     $dotNet1Builds = @{
-        '{78705f0d-e8db-4b2d-8193-982bdda15ecd}' = 'on supported platforms except for Windows XP Media Center and Tablet PC'
-        '{FDC11A6F-17D1-48f9-9EA3-9051954BAA24}' = 'shipped with Windows XP Media Center 2002/2004 and Tablet PC 2004'
+        '{78705f0d-e8db-4b2d-8193-982bdda15ecd}' = 'NON Windows XP Media Center and Tablet PC'
+        '{FDC11A6F-17D1-48f9-9EA3-9051954BAA24}' = 'Windows XP Media Center 2002/2004 and Tablet PC 2004'
+    }
+
+    try {
+        $RunningEnvironment = [Runtime.InteropServices.RuntimeInformation]::FrameworkDescription
+        [PSCustomObject]@{
+            Version = [version] $RunningEnvironment.Split(' ')[-1]
+            Comment = 'Currently running .NET version'
+            SP      = $null
+            Build   = $null
+        }
+    } catch {
+        Write-Verbose -Message 'Currently running version is older than 4.7.1'
     }
 
     foreach ($g in $Generation) {
@@ -109,7 +122,7 @@ function Get-NetFrameworkVersion {
                     }
                 }
             }
-            Default {
+            default {
                 Get-ChildItem -Path $dotNetRegistry |
                     Where-Object { $_.PSChildName -like "v[$g]*" } |
                     Get-ItemProperty |
