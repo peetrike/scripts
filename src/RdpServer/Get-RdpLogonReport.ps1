@@ -42,32 +42,19 @@ function stringTime {
     $time.ToUniversalTime().ToString('o')
 }
 
-$LogName = 'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational'
-
-$xPathFilter = '*[System[(EventID=21 or (EventID &gt;= 23 and EventID &lt;= 25))'
-if ($After -or $Before) {
-    $xPathFilter += ' and TimeCreated[@SystemTime'
-    if ($After) {
-        $xPathFilter += '&gt;="{0}"' -f (stringTime $After)
-        if ($Before) { $xPathFilter += ' and @SystemTime' }
-    }
-    if ($Before) {
-        $xPathFilter += '&lt;="{0}"' -f (stringTime $Before)
-    }
-    $xPathFilter += ']'
+$Filter = @{
+    LogName = 'Microsoft-Windows-TerminalServices-LocalSessionManager/Operational'
+    Id      = 21, 23, 24, 25
 }
-$xPathFilter += ']]'
-
-$xmlFilter = '<QueryList>
-  <Query Id="0" Path="{0}">
-    <Select Path="{0}">
-      {1}
-    </Select>
-  </Query>
-</QueryList>' -f $LogName, $xPathFilter
+if ($After) {
+    $Filter.StartTime = $After
+}
+if ($Before) {
+    $Filter.EndTime = $Before
+}
 Write-Debug -Message ("Using filter:`n{0}" -f $xmlFilter)
 
-foreach ($currentEvent in Get-WinEvent -ComputerName $ComputerName -FilterXml $xmlFilter) {
+foreach ($currentEvent in Get-WinEvent -ComputerName $ComputerName -FilterHashtable $Filter) {
     $XmlEvent = [xml]$currentEvent.ToXml()
 
     $eventProps = @{
