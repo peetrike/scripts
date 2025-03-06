@@ -2,12 +2,12 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.4.0
+    .VERSION 0.4.1
     .GUID af691618-7b30-4bb3-8fa2-a4631c6b37c7
 
     .AUTHOR Peter Wawa
     .COMPANYNAME Telia Eesti
-    .COPYRIGHT (c) Telia Eesti 2023.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti 2025.  All rights reserved.
 
     .TAGS ActiveDirectory, AD, user, e-mail
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.4.1] - 2025-03-06 - Fix variable name when there is no default proxy addresses.
         [0.4.0] - 2024-07-26 - Don't replace entire list, instead remove old default and add new ones.
         [0.3.3] - 2023-10-12 - Ensure that proxy addresses are unique.
         [0.3.2] - 2023-10-11 - Add previous mail address to proxy addresses.
@@ -119,7 +120,7 @@ process {
         if ($DefaultAddress -match '^SMTP:(.*@)') {
             $NewDefault = $Matches[1] + $Domain
         } elseif ($User.mail) {
-            $NewAddress = '{0}@{1}' -f $MailAddress.User, $Domain
+            $NewDefault = '{0}@{1}' -f $MailAddress.User, $Domain
         } else {
             $Message = 'The user account "{0}" does not have default mail address' -f $User.UserPrincipalName
             $ErrorRecord = New-Object -TypeName 'System.Management.Automation.ErrorRecord' -ArgumentList @(
