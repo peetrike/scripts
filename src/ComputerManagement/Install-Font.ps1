@@ -7,7 +7,7 @@
     .COMPANYNAME Telia Eesti AS
     .COPYRIGHT (c) Telia Eesti AS 2025.  All rights reserved.
 
-    .TAGS font
+    .TAGS font PSEdition_Core PSEdition_Desktop Windows
 
     .LICENSEURI https://opensource.org/licenses/MIT
     .PROJECTURI https://github.com/peetrike/scripts
@@ -29,7 +29,9 @@
     .DESCRIPTION
         This script installs fonts from specified path.  The Scope parameter determines where to install fonts.
     .NOTES
-        This script runs only on windows
+        This script runs only on Windows
+    .INPUTS
+        List of folders or font files
     .EXAMPLE
         .\Install-Font.ps1 -Path .\myfont.ttf
 
@@ -45,6 +47,7 @@
         Fonts are reinstalled, when already installed.
 #>
 
+[OutputType([void])]
 [CmdletBinding(
     SupportsShouldProcess
 )]
@@ -52,6 +55,7 @@ param (
         [Parameter(
             Mandatory,
             Position = 0,
+            HelpMessage = 'Please enter path to font or folder containing fonts',
             ValueFromPipelineByPropertyName
         )]
         [ValidateScript({
@@ -59,13 +63,17 @@ param (
         })]
         [Alias('FullName')]
         [string]
+        # Specifies path to font or folder containing fonts
     $Path,
         [switch]
+        # Specifies that folders containing fonts should be searched recursively
     $Recurse,
         [ValidateSet('CurrentUser', 'AllUsers')]
         [string]
+        # Specifies scope to install fonts
     $Scope = 'CurrentUser',
         [switch]
+        # Reinstalls fonts, when already installed
     $Force
 )
 
