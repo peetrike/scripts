@@ -1,15 +1,20 @@
 ﻿<#
 .SYNOPSIS
-    A short one-line action-based description, e.g. 'Tests if a function is valid'
+    Installs fonts
 .DESCRIPTION
-    A longer description of the function, its purpose, common use cases, etc.
+    This script installs fonts from specified path.  The Scope parameter determines where to install fonts.
 .NOTES
-    Information or caveats about the function e.g. 'This function is not supported in Linux'
+    This script runs only on windows
 .LINK
     Specify a URI to a help page, this will show when Get-Help -Online is used.
 .EXAMPLE
-    Test-MyTestFunction -Verbose
-    Explanation of the function or its result. You can include multiple examples with additional .EXAMPLE lines
+    Install-Font -Path .\myfont.ttf
+
+    This example installs font from current directory to CurrentUser scope
+.EXAMPLE
+    Install-Font -Path \\server\fonts -Scope AllUsers
+
+    This example installs fonts from \\server\fonts directory to AllUsers scope
 #>
 
 [CmdletBinding(
@@ -18,14 +23,17 @@
 param (
         [Parameter(
             Mandatory,
+            Position = 0,
             ValueFromPipelineByPropertyName
         )]
         [ValidateScript({
-            Test-Path -Path $_ -PathType Leaf
+            Test-Path -Path $_
         })]
         [Alias('FullName')]
         [string]
-    $FontFile,
+    $Path,
+        [switch]
+    $Recurse,
         [ValidateSet('CurrentUser', 'AllUsers')]
         [string]
     $Scope = 'CurrentUser'
@@ -34,6 +42,11 @@ param (
 begin {
     Add-Type -AssemblyName PresentationCore
 
+    function Test-IsAdmin {
+        $CurrentUser = [Security.Principal.WindowsIdentity]::GetCurrent()
+        $Role = [Security.Principal.WindowsBuiltinRole]::Administrator
+        ([Security.Principal.WindowsPrincipal] $CurrentUser).IsInRole($Role)
+    }
     function Get-FontName {
         [CmdletBinding()]
         param (
@@ -52,7 +65,7 @@ begin {
 
     switch ($Scope) {
         'CurrentUser' {
-            $RegPath = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
+            $regDrive = 'HKCU:'
             $TargetPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'Microsoft\Windows\Fonts'
         }
         'AllUsers' {
@@ -60,10 +73,11 @@ begin {
                 $Exception = [Management.Automation.PSSecurityException] 'Admin Privileges required'
                 throw $Exception
             }
-            $RegPath = 'HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
-            $TargetPath = Join-Path -Path $env:windir -ChildPath 'Fonts'
+            $regDrive = 'HKLM:'
+            $TargetPath = [System.Environment]::GetFolderPath('Fonts')
         }
     }
+    $RegPath = $regDrive + '\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
 
     $confirmOff = @{
         Confirm = $false
@@ -71,29 +85,36 @@ begin {
 }
 
 process {
-    $FontItem = Get-Item -Path $FontFile
-    $typeFace = [Windows.Media.GlyphTypeface] [uri] $FontFile
-    # $FontFamily = [Windows.Media.Fonts]::GetFontFamilies($FontFile)
-    $FamilyName = Get-FontName -Name $typeFace.Win32FamilyNames
-    $FaceName = Get-FontName -Name $typeFace.Win32FaceNames
-    $FontType = switch ($FontItem.Extension) {
-        '.ttf' { 'TrueType' }
-        '.otf' { 'OpenType' }
-        default {
-            Write-Error -Message ('Unknown font extension: {0}' -f $_)
-            return
+    $FontItem = Get-Item -Path $Path
+    $FontList = if ($FontItem.PSIsContainer) {
+        Get-ChildItem -Path ($FontItem.FullName + '\*') -File -Include '*.ttf', '*.otf' -Recurse:$Recurse
+    } else {
+        $FontItem
+    }
+    foreach ($fontFile in $FontList) {
+        #Write-Verbose -Message ('Installing font "{0}"' -f $fontFile.Name)
+        $typeFace = [Windows.Media.GlyphTypeface] [uri] $fontFile.FullName
+        $FamilyName = Get-FontName -Name $typeFace.Win32FamilyNames
+        $FaceName = Get-FontName -Name $typeFace.Win32FaceNames
+        $FontType = switch ($fontFile.Extension) {
+            '.ttf' { 'TrueType' }
+            '.otf' { 'OpenType' }
+            default {
+                Write-Error -Message ('Unknown font extension: {0}' -f $_)
+                continue
+            }
         }
-    }
-    $FontName = '{0} {1} ({2})' -f $FamilyName, $FaceName, $FontType
+        $FontName = '{0} {1} ({2})' -f $FamilyName, $FaceName, $FontType
 
-    $TargetName = Join-Path -Path $TargetPath -ChildPath $FontItem.Name
-    if (Test-Path -Path $TargetName -PathType Leaf) {
-        Write-Verbose -Message ('Font "{0}" already exists' -f $FontName)
-        return
-    }
+        $TargetName = Join-Path -Path $TargetPath -ChildPath $fontFile.Name
+        if (Test-Path -Path $TargetName -PathType Leaf) {
+            Write-Verbose -Message ('Font "{0}" already exists' -f $FontName)
+            continue
+        }
 
-    if ($PSCmdlet.ShouldProcess($FontName, 'Install font')) {
-        Copy-Item -Path $FontFile -Destination $TargetPath @confirmOff
-        Set-ItemProperty -Path $RegPath -Name $FontName -Value $FontItem.Name -Type String @confirmOff
+        if ($PSCmdlet.ShouldProcess($FontName, 'Install font')) {
+            Copy-Item -Path $FontFile.FullName -Destination $TargetPath @confirmOff
+            Set-ItemProperty -Path $RegPath -Name $FontName -Value $FontItem.Name -Type String @confirmOff
+        }
     }
 }
