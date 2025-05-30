@@ -88,5 +88,5 @@ process {
     }
 
     Copy-Item -Path $FontFile -Destination $TargetPath
-    Set-ItemProperty -Path $RegPath -Name $FontName -Value $FontFile -Type String
+    Set-ItemProperty -Path $RegPath -Name $FontName -Value $FontItem.Name -Type String
 }
