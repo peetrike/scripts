@@ -1,12 +1,34 @@
-﻿<#
+﻿<#PSScriptInfo
+
+    .VERSION 1.0.0
+    .GUID 5e8d2e80-f59a-4205-9160-f94b106f90dd
+
+    .AUTHOR Peter Wawa
+    .COMPANYNAME Telia Eesti AS
+    .COPYRIGHT (c) Telia Eesti AS 2025.  All rights reserved.
+
+    .TAGS font
+
+    .LICENSEURI https://opensource.org/licenses/MIT
+    .PROJECTURI https://github.com/peetrike/scripts
+    .ICONURI
+
+    .EXTERNALMODULEDEPENDENCIES
+    .REQUIREDSCRIPTS
+    .EXTERNALSCRIPTDEPENDENCIES
+
+    .RELEASENOTES
+
+    .PRIVATEDATA
+#>
+
+<#
     .SYNOPSIS
         Installs fonts
     .DESCRIPTION
         This script installs fonts from specified path.  The Scope parameter determines where to install fonts.
     .NOTES
         This script runs only on windows
-    .LINK
-        Specify a URI to a help page, this will show when Get-Help -Online is used.
     .EXAMPLE
         .\Install-Font.ps1 -Path .\myfont.ttf
 
