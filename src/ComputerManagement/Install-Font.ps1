@@ -36,7 +36,9 @@ param (
     $Recurse,
         [ValidateSet('CurrentUser', 'AllUsers')]
         [string]
-    $Scope = 'CurrentUser'
+    $Scope = 'CurrentUser',
+        [switch]
+    $Force
 )
 
 begin {
@@ -107,7 +109,7 @@ process {
         $FontName = '{0} {1} ({2})' -f $FamilyName, $FaceName, $FontType
 
         $TargetName = Join-Path -Path $TargetPath -ChildPath $fontFile.Name
-        if (Test-Path -Path $TargetName -PathType Leaf) {
+        if ((Test-Path -Path $TargetName -PathType Leaf) -and -not $Force) {
             Write-Verbose -Message ('Font "{0}" already exists' -f $FontName)
             continue
         }
