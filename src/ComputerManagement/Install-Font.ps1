@@ -34,20 +34,6 @@ param (
 begin {
     Add-Type -AssemblyName PresentationCore
 
-    switch ($Scope) {
-        'CurrentUser' {
-            $RegPath = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
-            $TargetPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'Microsoft\Windows\Fonts'
-        }
-        'AllUsers' {
-            if (-not (Test-IsAdmin)) {
-                $Exception = [Management.Automation.PSSecurityException] 'Admin Privileges required'
-                throw $Exception
-            }
-            $RegPath = 'HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
-            $TargetPath = Join-Path -Path $env:windir -ChildPath 'Fonts'
-        }
-    }
     function Get-FontName {
         [CmdletBinding()]
         param (
@@ -63,10 +49,29 @@ begin {
             $Name.Values[0]
         ) | Select-Object -First 1
     }
+
+    switch ($Scope) {
+        'CurrentUser' {
+            $RegPath = 'HKCU:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
+            $TargetPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'Microsoft\Windows\Fonts'
+        }
+        'AllUsers' {
+            if (-not (Test-IsAdmin)) {
+                $Exception = [Management.Automation.PSSecurityException] 'Admin Privileges required'
+                throw $Exception
+            }
+            $RegPath = 'HKLM:\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
+            $TargetPath = Join-Path -Path $env:windir -ChildPath 'Fonts'
+        }
+    }
+
+    $confirmOff = @{
+        Confirm = $false
+    }
 }
 
 process {
-    $FontItem = get-item -Path $FontFile
+    $FontItem = Get-Item -Path $FontFile
     $typeFace = [Windows.Media.GlyphTypeface] [uri] $FontFile
     # $FontFamily = [Windows.Media.Fonts]::GetFontFamilies($FontFile)
     $FamilyName = Get-FontName -Name $typeFace.Win32FamilyNames
@@ -83,10 +88,12 @@ process {
 
     $TargetName = Join-Path -Path $TargetPath -ChildPath $FontItem.Name
     if (Test-Path -Path $TargetName -PathType Leaf) {
-        Write-Verbose -Message ('Font "{0}" already exists' -f $FamilyName)
+        Write-Verbose -Message ('Font "{0}" already exists' -f $FontName)
         return
     }
 
-    Copy-Item -Path $FontFile -Destination $TargetPath
-    Set-ItemProperty -Path $RegPath -Name $FontName -Value $FontItem.Name -Type String
+    if ($PSCmdlet.ShouldProcess($FontName, 'Install font')) {
+        Copy-Item -Path $FontFile -Destination $TargetPath @confirmOff
+        Set-ItemProperty -Path $RegPath -Name $FontName -Value $FontItem.Name -Type String @confirmOff
+    }
 }
