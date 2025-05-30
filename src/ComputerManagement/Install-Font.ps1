@@ -1,20 +1,25 @@
 ﻿<#
-.SYNOPSIS
-    Installs fonts
-.DESCRIPTION
-    This script installs fonts from specified path.  The Scope parameter determines where to install fonts.
-.NOTES
-    This script runs only on windows
-.LINK
-    Specify a URI to a help page, this will show when Get-Help -Online is used.
-.EXAMPLE
-    Install-Font -Path .\myfont.ttf
+    .SYNOPSIS
+        Installs fonts
+    .DESCRIPTION
+        This script installs fonts from specified path.  The Scope parameter determines where to install fonts.
+    .NOTES
+        This script runs only on windows
+    .LINK
+        Specify a URI to a help page, this will show when Get-Help -Online is used.
+    .EXAMPLE
+        .\Install-Font.ps1 -Path .\myfont.ttf
 
-    This example installs font from current directory to CurrentUser scope
-.EXAMPLE
-    Install-Font -Path \\server\fonts -Scope AllUsers
+        This example installs font from current directory to CurrentUser scope
+    .EXAMPLE
+        .\Install-Font.ps1 -Path \\server\fonts -Scope AllUsers
 
-    This example installs fonts from \\server\fonts directory to AllUsers scope
+        This example installs fonts from \\server\fonts directory to AllUsers scope
+    .EXAMPLE
+        Get-ChildItem -Path .\fonts | .\Install-Font.ps1 -Force
+
+        This example installs fonts provided by Get-ChildItem cmdlet.
+        Fonts are reinstalled, when already installed.
 #>
 
 [CmdletBinding(
