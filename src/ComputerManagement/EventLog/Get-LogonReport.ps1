@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.0.5
+    .VERSION 1.1.0
 
     .GUID aeb78b6a-0f41-4d74-b914-4f4c26f31acb
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.0] - 2025.04.03 - encapsulates script content in function
         [1.0.5] - 2025.01.06 - Refactored script to use Hashtable filter for events
         [1.0.4] - 2023.03.21 - Added ProcessName to report
         [1.0.3] - 2022.05.27 - Changed obtaining named properties to use XPath
@@ -54,7 +55,23 @@
     .LINK
         Get-WinEvent
 #>
+[CmdletBinding()]
+param (
+        [ValidateSet('Failure', 'Logoff', 'Logon')]
+        [string[]]
+        # Specifies type of events to collect
+    $Type = 'Logon',
+        [Alias('StartTime')]
+        [datetime]
+        # Specifies start time of events
+    $After,
+        [Alias('EndTime')]
+        [datetime]
+        # Specifies end time of events
+    $Before
+)
 
+function Get-LogonReport {
 [CmdletBinding()]
 param (
         [ValidateSet('Failure', 'Logoff', 'Logon')]
@@ -140,3 +157,6 @@ foreach ($currentEvent in Get-WinEvent -FilterHashtable $EventFilter) {
 
     New-Object -TypeName PSCustomObject -Property $eventProps
 }
+}
+
+Get-LogonReport @PSBoundParameters
