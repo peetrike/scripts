@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.1.0
+    .VERSION 1.1.1
 
     .GUID aeb78b6a-0f41-4d74-b914-4f4c26f31acb
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.1] - 2025.07.04 - Replace Logon Type string with enum
         [1.1.0] - 2025.04.03 - encapsulates script content in function
         [1.0.5] - 2025.01.06 - Refactored script to use Hashtable filter for events
         [1.0.4] - 2023.03.21 - Added ProcessName to report
@@ -72,91 +73,104 @@ param (
 )
 
 function Get-LogonReport {
-[CmdletBinding()]
-param (
-        [ValidateSet('Failure', 'Logoff', 'Logon')]
-        [string[]]
-        # Specifies type of events to collect
-    $Type = 'Logon',
-        [Alias('StartTime')]
-        [datetime]
-        # Specifies start time of events
-    $After,
-        [Alias('EndTime')]
-        [datetime]
-        # Specifies end time of events
-    $Before
-)
+    [CmdletBinding()]
+    param (
+            [ValidateSet('Failure', 'Logoff', 'Logon')]
+            [string[]]
+            # Specifies type of events to collect
+        $Type = 'Logon',
+            [Alias('StartTime')]
+            [datetime]
+            # Specifies start time of events
+        $After,
+            [Alias('EndTime')]
+            [datetime]
+            # Specifies end time of events
+        $Before
+    )
 
-$EventList = @(
-    @{
-        Label = 'Audit Logon Success'
-        Type  = 'Logon'
-        Id    = 528     # Audit Policy Logon
-    }
-    @{
-        Label = 'Audit Logon Failure'
-        Type  = 'Failure'
-        Id    = 529     # Audit Policy Logon failure
-    }
-    @{
-        Label = 'Advanced Audit Logon Success'
-        Type  = 'Logon'
-        Id    = 4624    # Advanced Audit Policy Logon
-    }
-    @{
-        Label = 'Advanced Audit Logon Failure'
-        Type  = 'Failure'
-        Id    = 4625    # Advanced Audit Policy Logon failure
-    }
-    @{
-        Label = 'Advanced Audit Logoff'
-        Type  = 'Logoff'
-        Id    = 4647    # Advanced Audit Policy Logoff
-    }
-)
-
-$EventFilter = @{
-    LogName = 'Security'
-    ID      = $EventList | Where-Object { $Type -contains $_.Type } | ForEach-Object { $_.Id }
-}
-if ($After) {
-    $EventFilter.StartTime = $After
-}
-if ($Before) {
-    $EventFilter.EndTime = $Before
-}
-
-
-Write-Debug -Message ("Using filter:`n{0}" -f ($EventFilter | Out-String))
-
-foreach ($currentEvent in Get-WinEvent -FilterHashtable $EventFilter) {
-    $XmlEvent = [xml] $currentEvent.ToXml()
-    $LogonType = $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
-    $eventProps = @{
-        TimeCreated = $currentEvent.TimeCreated
-        EventType   = ($EventList | Where-Object { $_.Id -eq $currentEvent.Id }).Label
-        Id          = $currentEvent.Id
-        User        = '{1}\{0}' -f $XmlEvent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText,
-            $XmlEvent.SelectSingleNode('//*[@Name = "TargetDomainName"]').InnerText
-        SourceIp    = $xmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
-        ProcessName = $xmlEvent.SelectSingleNode('//*[@Name = "ProcessName"]').InnerText
-        LogonType   = switch ($LogonType) {
-            2 { 'Interactive - local logon' }
-            3 { 'Network' }
-            4 { 'Batch' }
-            5 { 'Service' }
-            7 { 'Unlock (after screensaver)' }
-            8 { 'NetworkCleartext' }
-            9 { 'NewCredentials (local impersonation process under existing connection)' }
-            10 { 'RDP' }
-            11 { 'CachedInteractive' }
-            default { 'LogonType Not Recognized: {0}' -f $LogonType }
+    $EventList = @(
+        @{
+            Label = 'Audit Logon Success'
+            Type  = 'Logon'
+            Id    = 528     # Audit Policy Logon
         }
+        @{
+            Label = 'Audit Logon Failure'
+            Type  = 'Failure'
+            Id    = 529     # Audit Policy Logon failure
+        }
+        @{
+            Label = 'Advanced Audit Logon Success'
+            Type  = 'Logon'
+            Id    = 4624    # Advanced Audit Policy Logon
+        }
+        @{
+            Label = 'Advanced Audit Logon Failure'
+            Type  = 'Failure'
+            Id    = 4625    # Advanced Audit Policy Logon failure
+        }
+        @{
+            Label = 'Advanced Audit Logoff'
+            Type  = 'Logoff'
+            Id    = 4647    # Advanced Audit Policy Logoff
+        }
+    )
+
+    $EventFilter = @{
+        LogName = 'Security'
+        ID      = $EventList | Where-Object { $Type -contains $_.Type } | ForEach-Object { $_.Id }
+    }
+    if ($After) {
+        $EventFilter.StartTime = $After
+    }
+    if ($Before) {
+        $EventFilter.EndTime = $Before
     }
 
-    New-Object -TypeName PSCustomObject -Property $eventProps
-}
+    Write-Debug -Message ("Using filter:`n{0}" -f ($EventFilter | Out-String))
+
+    try {
+        $null = [Event.LogonType]
+    } catch {
+            # https://learn.microsoft.com/windows/win32/api/ntsecapi/ne-ntsecapi-security_logon_type
+        Add-Type -TypeDefinition @'
+            namespace Event {
+                public enum LogonType {
+                    Undefined,
+                    Interactive = 2,
+                    Network,
+                    Batch,
+                    Service,
+                    Proxy,
+                    Unlock,
+                    NetworkCleartext,
+                    NewCredentials,
+                    RemoteInteractive,
+                    CachedInteractive,
+                    CachedRemoteInteractive,
+                    CachedUnlock
+                }
+            }
+'@
+    }
+
+    foreach ($currentEvent in Get-WinEvent -FilterHashtable $EventFilter) {
+        $XmlEvent = [xml] $currentEvent.ToXml()
+        $LogonType = $xmlEvent.SelectSingleNode('//*[@Name = "LogonType"]').InnerText
+        $eventProps = @{
+            TimeCreated = $currentEvent.TimeCreated
+            EventType   = ($EventList | Where-Object { $_.Id -eq $currentEvent.Id }).Label
+            Id          = $currentEvent.Id
+            User        = '{1}\{0}' -f $XmlEvent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText,
+                $XmlEvent.SelectSingleNode('//*[@Name = "TargetDomainName"]').InnerText
+            SourceIp    = $xmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
+            ProcessName = $xmlEvent.SelectSingleNode('//*[@Name = "ProcessName"]').InnerText
+            LogonType   = [Event.LogonType] $LogonType
+        }
+
+        New-Object -TypeName PSCustomObject -Property $eventProps
+    }
 }
 
 Get-LogonReport @PSBoundParameters
