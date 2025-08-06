@@ -1,6 +1,6 @@
 ﻿<#PSScriptInfo
 
-    .VERSION 1.0.0
+    .VERSION 1.0.1
     .GUID 5e8d2e80-f59a-4205-9160-f94b106f90dd
 
     .AUTHOR Peter Wawa
@@ -18,6 +18,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.1] - 2025.08.06 - Initial Release
         [1.0.0] - 2025.05.30 - Initial Release
 
     .PRIVATEDATA
@@ -152,7 +153,7 @@ process {
 
         if ($PSCmdlet.ShouldProcess($FontName, 'Install font')) {
             Copy-Item -Path $FontFile.FullName -Destination $TargetPath @confirmOff
-            Set-ItemProperty -Path $RegPath -Name $FontName -Value $FontItem.Name -Type String @confirmOff
+            Set-ItemProperty -Path $RegPath -Name $FontName -Value $fontFile.Name -Type String @confirmOff
         }
     }
 }
