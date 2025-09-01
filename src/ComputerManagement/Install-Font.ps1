@@ -1,6 +1,6 @@
 ﻿<#PSScriptInfo
 
-    .VERSION 1.0.1
+    .VERSION 1.0.2
     .GUID 5e8d2e80-f59a-4205-9160-f94b106f90dd
 
     .AUTHOR Peter Wawa
@@ -18,7 +18,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.0.1] - 2025.08.06 - Initial Release
+        [1.0.2] - 2025.09.01 - Create CurrentUser folder, when needed
+        [1.0.1] - 2025.08.06 - Fix font installation in registry
         [1.0.0] - 2025.05.30 - Initial Release
 
     .PRIVATEDATA
@@ -106,6 +107,9 @@ begin {
         'CurrentUser' {
             $regDrive = 'HKCU:'
             $TargetPath = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'Microsoft\Windows\Fonts'
+            if (-not (Test-Path -Path $TargetPath -PathType Container)) {
+                $null = New-Item -Path $TargetPath -ItemType Directory
+            }
         }
         'AllUsers' {
             if (-not (Test-IsAdmin)) {
@@ -113,7 +117,7 @@ begin {
                 throw $Exception
             }
             $regDrive = 'HKLM:'
-            $TargetPath = [System.Environment]::GetFolderPath('Fonts')
+            $TargetPath = [Environment]::GetFolderPath('Fonts')
         }
     }
     $RegPath = $regDrive + '\Software\Microsoft\Windows NT\CurrentVersion\Fonts'
