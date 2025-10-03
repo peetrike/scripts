@@ -39,6 +39,8 @@
         Returns activation count for last 3 days
     .LINK
         https://learn.microsoft.com/windows-server/get-started/activation-troubleshoot-kms-general
+    .LINK
+        https://learn.microsoft.com/troubleshoot/windows-server/licensing-and-activation/troubleshoot-activation-error-codes
 #>
 
 [CmdletBinding()]
