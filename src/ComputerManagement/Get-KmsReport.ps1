@@ -95,10 +95,11 @@ function Get-KmsLog {
                 MinCount      = [int] $_.Properties.Value[2]
                 ComputerName  = $_.Properties.Value[3]
                 ClientId      = [guid] $_.Properties.Value[4]
-                Timestamp     = [datetime] $_.Properties.Value[5]
+                ClientTime    = [datetime] $_.Properties.Value[5]
                 IsVM          = [bool] [int] $_.Properties.Value[6]
                 LicenseStatus = [LicenseStatus] [int] $_.Properties.Value[7]
                 Expiration    = New-TimeSpan -Minutes ([int] $_.Properties.Value[8])
+                ProductId     = [guid] $_.Properties.Value[9]
             }
         }
 }
