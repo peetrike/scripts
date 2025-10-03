@@ -30,21 +30,17 @@
     .DESCRIPTION
         This script generates report for activated servers from KMS event log
     .EXAMPLE
-        Get-KmsReport.ps1
+        Get-KmsReport.ps1 -PassThru
 
-        Returns activation count for last 7 days
+        Returns activation count for last 7 days and outputs to both pipeline and CSV file.
     .EXAMPLE
         Get-KmsReport.ps1 -Days 3
 
         Returns activation count for last 3 days
-    .NOTES
-        General notes
     .LINK
         KMS Troubleshooting: https://learn.microsoft.com/windows-server/get-started/activation-troubleshoot-kms-general
 #>
 
-#[Alias('')]
-[OutputType([psobject[]])]
 [CmdletBinding()]
 param (
         [ValidateRange(1, 180)]
@@ -53,8 +49,10 @@ param (
         # Number of days to look back in Event Log
     $Days,
         [switch]
+        # return result both to .CSV report and pipeline
     $PassThru,
         [string]
+        # Folder path to store .CSV report
     $LogPath = $PWD
 )
 
@@ -94,9 +92,8 @@ function Get-KmsLog {
             [PSCustomObject] @{
                 TimeCreated   = $_.TimeCreated
                 ErrorCode     = $_.Properties.Value[1]
-                # ErrorCode     = [convert]::ToInt32($_.Properties.Value[1], 16)
                 MinCount      = [int] $_.Properties.Value[2]
-                ComputerName  = $_.Properties.Value[3].ToLower()
+                ComputerName  = $_.Properties.Value[3]
                 ClientId      = [guid] $_.Properties.Value[4]
                 Timestamp     = [datetime] $_.Properties.Value[5]
                 IsVM          = [bool] [int] $_.Properties.Value[6]
@@ -107,7 +104,7 @@ function Get-KmsLog {
 }
 
 $result = Get-KmsLog -Days $Days |
-    Where-Object ErrorCode -like '0x0' |
+    Where-Object ErrorCode -Like '0x0' |
     Group-Object ClientId | ForEach-Object {
         $Group = $_
         $Group.Group | Group-Object LicenseStatus | ForEach-Object {
