@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 2.1.0
+    .VERSION 2.1.1
     .GUID 0391ff58-893b-4d0b-949b-3a1e32fdfa75
 
     .AUTHOR Peter Wawa
@@ -18,6 +18,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [2.1.1] - 2025.11.03 - Remove redundant assignment.
         [2.1.0] - 2024.06.25 - Remove compressing paths.
         [2.0.1] - 2024.06.25 - Fix finding registry path.
         [2.0.0] - 2024.01.30 - Script now uses registry and non-expanded strings.
@@ -109,10 +110,11 @@ $PathSeparator = [IO.Path]::PathSeparator
     }
     $key = (Get-Item $BaseKey).OpenSubKey('Environment', $true)
 
-    [object[]]$OldList = $key.GetValue($Variable, '', 'DoNotExpandEnvironmentNames').Split($PathSeparator) |
+    $key.GetValue($Variable, '', 'DoNotExpandEnvironmentNames').Split($PathSeparator) |
         Where-Object { $_ -and ($_ -ne $Value) } |
         Select-Object -Unique
 } else {
+        # Process scope
     [Environment]::GetEnvironmentVariable($Variable, $Target).Split($PathSeparator) |
         Where-Object { $_ -and ($_ -ne $Value) } |
         Select-Object -Unique
