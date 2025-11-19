@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.8.0
+    .VERSION 1.8.1
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
     .AUTHOR Peter Wawa
@@ -154,10 +154,12 @@ if ($conf.config.mail.bodyAsHtml) {
     # get users
 $AndPart = ' -and '
 $searchProperties = @{
-    Filter     = 'Enabled -eq $true' + $AndPart +
-                 'PasswordNeverExpires -eq $false' + $AndPart +
-                 'logonCount -ge 1' + $AndPart +
-                 'mail -like "*"'
+    Filter     = @(
+            'Enabled -eq $true'
+            'PasswordNeverExpires -eq $false'
+            'logonCount -ge 1'
+            if (-not $conf.config.user.item('useManagerMail')) { 'mail -like "*"' }
+    ) -join $AndPart
     Properties = @(
         'CannotChangePassword'
         'mail'
