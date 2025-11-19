@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.8.1
+    .VERSION 1.8.2
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
     .AUTHOR Peter Wawa
@@ -212,7 +212,7 @@ Get-ADUser @searchProperties |
                 Write-Debug -Message "Processing day $day, user $userName"
                 if ($PasswordDays -eq $day) {
                     $mailSettings.To = $userMail
-                    $mailSettings.Body = ($conf.config.mail.body -f $userName, $day)
+                    $mailSettings.Body = ($conf.config.mail.item('body').InnerText -f $userName, $day)
                     $OutputProps = @{
                         Date         = [datetime]::Now.ToString('s')
                         User         = $userName
