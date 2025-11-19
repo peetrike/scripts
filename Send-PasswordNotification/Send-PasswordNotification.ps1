@@ -2,12 +2,12 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.7.3
+    .VERSION 1.8.0
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
     .AUTHOR Peter Wawa
     .COMPANYNAME !ZUM!
-    .COPYRIGHT (c) 2024 Peter Wawa.  All rights reserved.
+    .COPYRIGHT (c) 2025 Peter Wawa.  All rights reserved.
 
     .TAGS password e-mail email notification Windows PSEdition_Desktop PSEdition_Core
 
@@ -143,8 +143,12 @@ $mailSettings = @{
     From       = $conf.config.mail.from
     SmtpServer = $conf.config.server
     Encoding   = [text.encoding]::UTF8
+    Priority   = $conf.config.mail.priority
     To         = ''
     Body       = ''
+}
+if ($conf.config.mail.bodyAsHtml) {
+    $mailSettings.BodyAsHtml = $true
 }
 
     # get users

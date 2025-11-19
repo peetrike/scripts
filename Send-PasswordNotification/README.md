@@ -68,6 +68,11 @@ The `mail` element contains settings that are required to send e-mail:
 - `body` parameter contains e-mail body.  There are 2 placeholders used there:
   - `{0}` is replaced with user account name.
   - `{1}` is replaced with number of days that are remaining.
+- `priority` parameter specifies mail message priority. Possible values:
+  - Normal
+  - Low
+  - High
+- `bodyAsHtml` parameter specifies that e-mail body should be sent as HTML
 
 ### ReportFile
 
