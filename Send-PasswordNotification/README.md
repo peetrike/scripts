@@ -107,7 +107,7 @@ command line.
 ### Running script with -PassThru parameter
 
 ```powershell
-Send-PasswordNotification.ps1 13 -DaysBefore 14 -PassThru
+Send-PasswordNotification.ps1 -DaysBefore 14 -PassThru
 ```
 
 This example generates output object for every notification that occurs.
