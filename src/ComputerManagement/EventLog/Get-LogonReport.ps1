@@ -1,7 +1,7 @@
 ﻿#Requires -Version 2.0
 
 <#PSScriptInfo
-    .VERSION 1.1.1
+    .VERSION 1.1.2
 
     .GUID aeb78b6a-0f41-4d74-b914-4f4c26f31acb
 
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.1.2] - 2025.12.08 - Replace Logon Type string with enum
         [1.1.1] - 2025.07.04 - Replace Logon Type string with enum
         [1.1.0] - 2025.04.03 - encapsulates script content in function
         [1.0.5] - 2025.01.06 - Refactored script to use Hashtable filter for events
@@ -28,7 +29,6 @@
         [1.0.2] - 2021.12.31 - Moved script to Github
         [1.0.1] - 2020.11.04 - change date conversion
         [1.0.0] - 2020.11.03 - Initial Release
-
     .PRIVATEDATA
 #>
 
@@ -164,6 +164,7 @@ function Get-LogonReport {
             Id          = $currentEvent.Id
             User        = '{1}\{0}' -f $XmlEvent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText,
                 $XmlEvent.SelectSingleNode('//*[@Name = "TargetDomainName"]').InnerText
+            SourceName  = $xmlEvent.SelectSingleNode('//*[@Name = "WorkstationName"]').InnerText
             SourceIp    = $xmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
             ProcessName = $xmlEvent.SelectSingleNode('//*[@Name = "ProcessName"]').InnerText
             LogonType   = [Event.LogonType] $LogonType
