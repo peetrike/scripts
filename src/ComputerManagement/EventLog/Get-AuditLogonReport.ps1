@@ -2,13 +2,13 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.0.3
+    .VERSION 1.0.4
 
     .GUID 6e7bc3e9-22b7-4915-9246-e65816f49a78
 
     .AUTHOR Meelis Nigols
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2021.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2025.  All rights reserved.
 
     .TAGS report, logon, event, AD
 
@@ -21,6 +21,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.0.4] - 2025.12.08 - Changed XML filter to hashtable one.
         [1.0.3] - 2021.12.31 - Moved script to Github
         [1.0.2] - 2021.12.29 - Fixed required modules
         [1.0.1] - 2021.01.07 - Initial Release
@@ -114,53 +115,29 @@ $EventList = @(
     }
 )
 
-function stringTime {
-    param (
-            [datetime]
-        $time
-    )
-
-    $time.ToUniversalTime().ToString('o')
+$EventFilter = @{
+    LogName = 'Security'
+    ID      = $EventList | Where-Object { $Type -contains $_.Type } | ForEach-Object { $_.Id }
+}
+if ($After) {
+    $EventFilter.StartTime = $After
+}
+if ($Before) {
+    $EventFilter.EndTime = $Before
 }
 
-$xPathFilter = '*[System[(' + (
-    $(
-        $EventList |
-            Where-Object { $Type -contains $_.Type } |
-            #Sort-Object -Property Id -Unique |
-            ForEach-Object { 'EventID={0}' -f $_.Id }
-    ) -join ' or '
-) + ')'
-if ($After -or $Before) {
-    $xPathFilter += ' and TimeCreated[@SystemTime'
-    if ($After) {
-        $xPathFilter += "&gt;='{0}'" -f (stringTime $After)
-        if ($Before) { $xPathFilter += ' and @SystemTime' }
-    }
-    if ($Before) {
-        $xPathFilter += "&lt;='{0}'" -f (stringTime $Before)
-    }
-    $xPathFilter += ']'
-}
-$xPathFilter += ']]'
-
-Write-Debug -Message ("Using filter:`n{0}" -f $xPathFilter)
-$xmlFilter = "<QueryList>
-  <Query Id='0' Path='Security'>
-    <Select Path='Security'>{0}</Select>
-  </Query>
-</QueryList>" -f $xPathFilter
+Write-Debug -Message ("Using filter:`n{0}" -f ($EventFilter | Out-String))
 
 $DcFilter = if ($LocalOnly) { "Name -like '$env:COMPUTERNAME'" } else { '*' }
 foreach ($dc in Get-ADDomainController -Filter $DCFilter) {
     Write-Verbose -Message ('Connecting with {0}' -f $dc.Name)
-    Get-WinEvent -FilterXml $xmlFilter -ComputerName $dc.HostName | ForEach-Object {
+    Get-WinEvent -FilterHashtable $EventFilter -ComputerName $dc.HostName | ForEach-Object {
         $CurrentEvent = $_
-        $XmlEvent = [xml]$currentEvent.ToXml()
+        $XmlEvent = [xml] $currentEvent.ToXml()
         $XmlData = $XmlEvent.Event.EventData.Data
-        $domain = ($XmlData | Where-Object { $_.Name -like 'TargetDomainName' }).'#text'
-        $user = ($XmlData | Where-Object { $_.Name -like 'TargetUserName' }).'#text'
-        $AccountSid = [Security.Principal.SecurityIdentifier] ($xmlData | Where-Object { $_.Name -like 'TargetSid' }).'#text'
+        $domain = $xmlEvent.SelectSingleNode('//*[@Name = "TargetDomainName"]').InnerText
+        $user = $Xmlevent.SelectSingleNode('//*[@Name = "TargetUserName"]').InnerText
+        $AccountSid = [Security.Principal.SecurityIdentifier] $XmlEvent.SelectSingleNode('//*[@Name = "TargetSid"]').InnerText
 
         $eventProps = @{
             TimeCreated   = $currentEvent.TimeCreated
@@ -170,9 +147,9 @@ foreach ($dc in Get-ADDomainController -Filter $DCFilter) {
             Account       = if ($AccountSid) {
                 $AccountSid.Translate([Security.Principal.NTAccount]).Value
             } else { $null }
-            SourceMachine = ($xmlData | Where-Object { $_.Name -like 'Workstation' }).'#text'
-            SourceIp      = ($xmlData | Where-Object { $_.Name -like 'IpAddress' }).'#text'
-            Status        = ($xmlData | Where-Object { $_.Name -like 'Status' }).'#text'
+            SourceMachine = $XmlEvent.SelectSingleNode('//*[@Name = "WorkstationName"]').InnerText
+            SourceIp      = $XmlEvent.SelectSingleNode('//*[@Name = "IpAddress"]').InnerText
+            Status        = $XmlEvent.SelectSingleNode('//*[@Name = "Status"]').InnerText
         }
 
         New-Object -TypeName PSCustomObject -Property $eventProps
