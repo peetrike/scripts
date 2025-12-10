@@ -2,12 +2,12 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.2.1
+    .VERSION 1.3.0
     .GUID a3b444d6-9e92-4f51-a8dc-dbd5aa155eea
 
     .AUTHOR Jaanus Jõgisu
     .COMPANYNAME Telia Eesti AS
-    .COPYRIGHT (c) Telia Eesti AS 2022.  All rights reserved.
+    .COPYRIGHT (c) Telia Eesti AS 2025.  All rights reserved.
 
     .TAGS ActiveDirectory, AD, Certificate, import
     .LICENSEURI https://opensource.org/licenses/MIT
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.3.0] - 2025.12.10 - Added second LDAP server to search from.
         [1.2.1] - 2022.11.14 - Updated SerialNumber AltIdentity string.
         [1.2.0] - 2022.05.12 - Added LeaveExisting parameter
         [1.1.0] - 2022.05.12 - Changed alternate certificate mapping to use
@@ -38,26 +39,26 @@
     .SYNOPSIS
         Adds ID Card Certificate Name Mapping to AD user account.
     .DESCRIPTION
-        This script finds certificates from esteid.ldap.sk.ee based on user
-        Personal Identity Code and adds certificate Name mapping to
-        AD user acccount.
+        This script finds certificates from esteid.ldap.sk.ee and ldap.eidpki.ee,
+        based on user Personal Identity Code and adds certificate Name mapping to
+        AD user account.
 
         It is assumed that Personal Identity Code is stored in AD user account
         attribute provided by IdProperty parameter (by default 'pager').
-    .PARAMETER Whatif
+    .PARAMETER WhatIf
         Shows what would happen if the script runs. The changes will not be saved.
     .PARAMETER Confirm
         Prompts you for confirmation before making changes.
     .EXAMPLE
         Import-SKCertificate.ps1 -ADUser user -UseSubject
 
-        This command adds certificate mappings to AD User account called user.
+        This example adds certificate mappings to AD User account called user.
         The certificate mapping will use Subject attribute reference
 
     .EXAMPLE
         Get-ADUser -filter {Name -like 'user*'} | Import-SKCertificate.ps1 -IdProperty EmployeeId
 
-        This command adds certificate mappings to several AD User accounts
+        This example adds certificate mappings to several AD User accounts
         that are found by Get-ADUser cmdlet and passed to script through pipeline.
         Script uses AD user property EmployeeId to obtain Personal Identity Code
     .INPUTS
@@ -73,13 +74,13 @@
 #>
 
 [CmdletBinding(
-    SupportsShouldProcess = $True
+    SupportsShouldProcess = $true
 )]
 param (
         [Parameter(
             Mandatory = $True,
             Position = 1,
-            HelpMessage = "Please enter AD user name",
+            HelpMessage = 'Please enter AD user name',
             ValueFromPipeline = $True
         )]
         [ValidateNotNullOrEmpty()]
@@ -128,18 +129,32 @@ begin {
 
     Add-Type -AssemblyName System.DirectoryServices.Protocols
 
-    $LDAPDirectoryService = 'esteid.ldap.sk.ee:636'
-    $LDAPServer = New-Object System.DirectoryServices.Protocols.LdapConnection $LDAPDirectoryService
+    $ConnectionData = @(
+        [PSCustomObject] @{
+            Fqdn       = 'esteid.ldap.sk.ee'
+            DN         = 'dc=ESTEID,c=EE'
+            Connection = $null
+        }
+        [PSCustomObject] @{
+            Fqdn       = 'ldap.eidpki.ee'
+            DN         = 'dc=ldap,dc=eidpki,dc=ee'
+            Connection = $null
+        }
+    )
+    foreach ($connection in $connectiondata) {
+        $serverIdentifier = New-Object -TypeName DirectoryServices.Protocols.LdapDirectoryIdentifier -ArgumentList @(
+            $Connection.Fqdn,
+            636
+        )
+        $ldapConnection = New-Object -TypeName DirectoryServices.Protocols.LdapConnection -ArgumentList $ServerIdentifier
+        $ldapConnection.AuthType = [DirectoryServices.Protocols.AuthType]::Anonymous
+        $ldapConnection.SessionOptions.ProtocolVersion = 3
+        $ldapConnection.SessionOptions.SecureSocketLayer = $true
+        $Connection.Connection = $ldapConnection
+    }
 
-    $LDAPServer.AuthType = [DirectoryServices.Protocols.AuthType]::Anonymous
-    $LDAPServer.SessionOptions.ProtocolVersion = 3
-    $LDAPServer.SessionOptions.SecureSocketLayer = $true
-
-    # Import-Module ActiveDirectory
-
-    $DomainDN = 'dc=ESTEID,c=EE'
     $Scope = [DirectoryServices.Protocols.SearchScope]::Subtree
-    $AttributeList = @('usercertificate;binary')
+    $AttributeName = 'usercertificate;binary'
     $MappingAttribute = 'altSecurityIdentities'
     $ConfirmProps = @{
         Confirm = $false
@@ -161,37 +176,40 @@ process {
         Write-Warning @ErrorProps
     } else {
         Write-Verbose -Message ('Using PNO code: {0}' -f $PNO)
+        $LdapQuery = '(serialNumber=PNOEE-{0})' -f $PNO
+        $CertList = foreach ($connection in $ConnectionData) {
+            $SearchRequest = New-Object DirectoryServices.Protocols.SearchRequest -ArgumentList @(
+                $connection.DN
+                $LdapQuery
+                $Scope
+                @($AttributeName)
+            )
 
-        $LDAPFilter = '(serialNumber=PNOEE-{0})' -f $PNO
-        $SearchRequest = New-Object System.DirectoryServices.Protocols.SearchRequest -ArgumentList @(
-            $DomainDN
-            $LDAPFilter
-            $Scope
-            $AttributeList
-        )
-
-        try {
-            $certResponse = $LDAPServer.SendRequest($SearchRequest)
-        } catch {
-            Write-Error $_.Exception.Message -ErrorAction Stop
+            try {
+                $QueryResult = $Connection.Connection.SendRequest($SearchRequest)
+            } catch {
+                Write-Error $_.Exception.Message
+                continue
+            }
+            $QueryResult.Entries |
+                Where-Object {
+                    $_.DistinguishedName -match 'ou=Authentication,o=(Identity|Digital|Residence card)'
+                }
         }
-
-        $CertList = $certResponse.Entries |
-            Where-Object { $_.DistinguishedName -match 'ou=Authentication,o=(Identity|Digital|Residence card)' }
 
         if ($CertList) {
             if (-not $LeaveExisting.IsPresent) {
                 Set-ADUser -Identity $userAccount -Clear $MappingAttribute
             }
 
-            foreach ($UserCert in $CertList.Attributes.'usercertificate;binary') {
+            foreach ($UserCert in $CertList.Attributes[$AttributeName]) {
                 $cert = [Security.Cryptography.X509Certificates.X509Certificate2] $UserCert
                 Write-Verbose -Message ('Found certificate with subject: {0}' -f $Cert.Subject)
 
                     # Certain fields, such as Issuer, Subject, and SerialNumber, are reported in a "forward" format
                     $issuer = ConvertTo-ReversePath $cert.Issuer
                     $altSecurityIdentity = 'X509:<I>{0}' -f $issuer
-                    if ($UseSubject.IsPresent) {
+                    if ($UseSubject) {
                         $subject = ConvertTo-ReversePath $cert.Subject
                         $altSecurityIdentity += '<S>{0}' -f $subject
                     } else {
@@ -214,8 +232,7 @@ process {
             }
         } else {
             Write-Warning -Message (
-                'User: {0} - no certificates found from {1}, skipping' -f
-                    $UserPrincipalName, $LDAPDirectoryService.split(':')[0]
+                'User: {0} - no certificates found, skipping' -f $UserPrincipalName
             )
         }
     }
