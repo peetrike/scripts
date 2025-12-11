@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.3.0
+    .VERSION 1.3.1
     .GUID a3b444d6-9e92-4f51-a8dc-dbd5aa155eea
 
     .AUTHOR Jaanus Jõgisu
@@ -19,6 +19,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [1.3.1] - 2025.12.10 - Flatten process block structure.
         [1.3.0] - 2025.12.10 - Added second LDAP server to search from.
         [1.2.1] - 2022.11.14 - Updated SerialNumber AltIdentity string.
         [1.2.0] - 2022.05.12 - Added LeaveExisting parameter
@@ -78,10 +79,10 @@
 )]
 param (
         [Parameter(
-            Mandatory = $True,
+            Mandatory = $true,
             Position = 1,
             HelpMessage = 'Please enter AD user name',
-            ValueFromPipeline = $True
+            ValueFromPipeline = $true
         )]
         [ValidateNotNullOrEmpty()]
         [Microsoft.ActiveDirectory.Management.ADUser]
@@ -142,11 +143,11 @@ begin {
         }
     )
     foreach ($connection in $connectiondata) {
-        $serverIdentifier = New-Object -TypeName DirectoryServices.Protocols.LdapDirectoryIdentifier -ArgumentList @(
+        $server = New-Object -TypeName DirectoryServices.Protocols.LdapDirectoryIdentifier -ArgumentList @(
             $Connection.Fqdn,
             636
         )
-        $ldapConnection = New-Object -TypeName DirectoryServices.Protocols.LdapConnection -ArgumentList $ServerIdentifier
+        $ldapConnection = New-Object -TypeName DirectoryServices.Protocols.LdapConnection -ArgumentList $server
         $ldapConnection.AuthType = [DirectoryServices.Protocols.AuthType]::Anonymous
         $ldapConnection.SessionOptions.ProtocolVersion = 3
         $ldapConnection.SessionOptions.SecureSocketLayer = $true
@@ -169,71 +170,72 @@ process {
 
     $PNO = $userAccount.$IdProperty
     if (-not $PNO) {
-        $ErrorProps = @{
-            Message = 'User: {0} - PNO value not found in attribute "{1}", skipping' -f
-                $UserPrincipalName, $IdProperty
+        $Message = 'User: {0} - PNO value not found in attribute "{1}", skipping' -f @(
+            $UserPrincipalName
+            $IdProperty
+        )
+        Write-Warning -Message $Message
+        return
+    }
+
+    Write-Verbose -Message ('Using PNO code: {0}' -f $PNO)
+    $LdapQuery = '(serialNumber=PNOEE-{0})' -f $PNO
+    $CertList = foreach ($connection in $ConnectionData) {
+        $SearchRequest = New-Object DirectoryServices.Protocols.SearchRequest -ArgumentList @(
+            $connection.DN
+            $LdapQuery
+            $Scope
+            @($AttributeName)
+        )
+
+        try {
+            $QueryResult = $Connection.Connection.SendRequest($SearchRequest)
+        } catch {
+            Write-Error $_.Exception.Message
+            continue
         }
-        Write-Warning @ErrorProps
-    } else {
-        Write-Verbose -Message ('Using PNO code: {0}' -f $PNO)
-        $LdapQuery = '(serialNumber=PNOEE-{0})' -f $PNO
-        $CertList = foreach ($connection in $ConnectionData) {
-            $SearchRequest = New-Object DirectoryServices.Protocols.SearchRequest -ArgumentList @(
-                $connection.DN
-                $LdapQuery
-                $Scope
-                @($AttributeName)
-            )
-
-            try {
-                $QueryResult = $Connection.Connection.SendRequest($SearchRequest)
-            } catch {
-                Write-Error $_.Exception.Message
-                continue
+        $QueryResult.Entries |
+            Where-Object {
+                $_.DistinguishedName -match 'ou=Authentication,o=(Identity|Digital|Residence card)'
             }
-            $QueryResult.Entries |
-                Where-Object {
-                    $_.DistinguishedName -match 'ou=Authentication,o=(Identity|Digital|Residence card)'
-                }
-        }
+    }
 
-        if ($CertList) {
-            if (-not $LeaveExisting.IsPresent) {
-                Set-ADUser -Identity $userAccount -Clear $MappingAttribute
+    if (-not $CertList) {
+        $Message = 'User: {0} - Certificate not found for PNO value "{1}", skipping' -f $UserPrincipalName, $PNO
+        Write-Warning -Message $Message
+        return
+    }
+
+    if (-not $LeaveExisting) {
+        Set-ADUser -Identity $userAccount -Clear $MappingAttribute
+    }
+
+    foreach ($UserCert in $CertList.Attributes[$AttributeName]) {
+        $cert = [Security.Cryptography.X509Certificates.X509Certificate2] $UserCert
+        Write-Verbose -Message ('Found certificate with subject: {0}' -f $Cert.Subject)
+
+            # Certain fields, such as Issuer, Subject, and SerialNumber, are reported in a "forward" format
+            $issuer = ConvertTo-ReversePath $cert.Issuer
+            $altSecurityIdentity = 'X509:<I>{0}' -f $issuer
+            if ($UseSubject) {
+                $subject = ConvertTo-ReversePath $cert.Subject
+                $altSecurityIdentity += '<S>{0}' -f $subject
+            } else {
+                $Serial = ConvertTo-ReverseSN $cert.SerialNumber
+                $altSecurityIdentity += '<SR>{0}' -f $Serial
             }
 
-            foreach ($UserCert in $CertList.Attributes[$AttributeName]) {
-                $cert = [Security.Cryptography.X509Certificates.X509Certificate2] $UserCert
-                Write-Verbose -Message ('Found certificate with subject: {0}' -f $Cert.Subject)
-
-                    # Certain fields, such as Issuer, Subject, and SerialNumber, are reported in a "forward" format
-                    $issuer = ConvertTo-ReversePath $cert.Issuer
-                    $altSecurityIdentity = 'X509:<I>{0}' -f $issuer
-                    if ($UseSubject) {
-                        $subject = ConvertTo-ReversePath $cert.Subject
-                        $altSecurityIdentity += '<S>{0}' -f $subject
-                    } else {
-                        $Serial = ConvertTo-ReverseSN $cert.SerialNumber
-                        $altSecurityIdentity += '<SR>{0}' -f $Serial
-                    }
-
-                if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Add Name Mapping')) {
-                    Set-ADUser -Identity $userAccount @ConfirmProps -Add @{
-                        $MappingAttribute = $altSecurityIdentity
-                    }
-
-                        # Output the reference for changed object
-                    New-Object -TypeName PSCustomObject -Property @{
-                        UPN      = $UserPrincipalName
-                        PNO      = $PNO
-                        Identity = $altSecurityIdentity
-                    }
-                }
+        if ($PSCmdlet.ShouldProcess($UserPrincipalName, 'Add Name Mapping')) {
+            Set-ADUser -Identity $userAccount @ConfirmProps -Add @{
+                $MappingAttribute = $altSecurityIdentity
             }
-        } else {
-            Write-Warning -Message (
-                'User: {0} - no certificates found, skipping' -f $UserPrincipalName
-            )
+
+                # Output the reference for changed object
+            New-Object -TypeName PSCustomObject -Property @{
+                UPN      = $UserPrincipalName
+                PNO      = $PNO
+                Identity = $altSecurityIdentity
+            }
         }
     }
 }
