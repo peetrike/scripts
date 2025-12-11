@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.3.1
+    .VERSION 1.3.2
     .GUID a3b444d6-9e92-4f51-a8dc-dbd5aa155eea
 
     .AUTHOR Jaanus Jõgisu
@@ -19,7 +19,8 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [1.3.1] - 2025.12.10 - Flatten process block structure.
+        [1.3.2] - 2025.12.11 - Enrich LDAP error object.
+        [1.3.1] - 2025.12.11 - Flatten process block structure.
         [1.3.0] - 2025.12.10 - Added second LDAP server to search from.
         [1.2.1] - 2022.11.14 - Updated SerialNumber AltIdentity string.
         [1.2.0] - 2022.05.12 - Added LeaveExisting parameter
@@ -142,7 +143,7 @@ begin {
             Connection = $null
         }
     )
-    foreach ($connection in $connectiondata) {
+    foreach ($connection in $ConnectionData) {
         $server = New-Object -TypeName DirectoryServices.Protocols.LdapDirectoryIdentifier -ArgumentList @(
             $Connection.Fqdn,
             636
@@ -189,9 +190,21 @@ process {
         )
 
         try {
+            Write-Debug -Message ('Querying server: {0}' -f $connection.Fqdn)
             $QueryResult = $Connection.Connection.SendRequest($SearchRequest)
         } catch {
-            Write-Error $_.Exception.Message
+            $currentError = $_
+            $TargetObject = [PSCustomObject] @{
+                Server = $connection.Fqdn
+                PNO    = $PNO
+            }
+            $errorRecord = New-Object -TypeName 'System.Management.Automation.ErrorRecord' -ArgumentList @(
+                $currentError.Exception
+                'LdapError'
+                [Management.Automation.ErrorCategory]::ConnectionError
+                $TargetObject
+            )
+            Write-Error -ErrorRecord $errorRecord
             continue
         }
         $QueryResult.Entries |
