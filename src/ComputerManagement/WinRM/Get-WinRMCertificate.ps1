@@ -9,6 +9,10 @@
         .\Get-WinRMCertificate.ps1
 
         This example exports Winrm over HTTPS remoting certificate
+    .LINK
+        https://learn.microsoft.com/powershell/module/microsoft.wsman.management/get-wsmaninstance
+    .LINK
+        https://learn.microsoft.com/powershell/module/pki/export-certificate
 #>
 [CmdletBinding()]
 param (
@@ -25,4 +29,5 @@ $Listener = Get-WSManInstance @SelectorSplat -ErrorAction Stop | Select-Object -
 
 $thumbPrint = $Listener.CertificateThumbprint
 $filename = Join-Path -Path $CertificatePath -ChildPath ('{0}.cer' -f $Listener.HostName)
-Get-Item -Path Cert:\LocalMachine\my\$Thumbprint | Export-Certificate -Type CERT -FilePath $filename
+Get-Item -Path Cert:\LocalMachine\my\$Thumbprint -ErrorAction Stop |
+    Export-Certificate -Type CERT -FilePath $filename
