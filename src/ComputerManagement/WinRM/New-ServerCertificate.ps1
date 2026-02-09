@@ -1,26 +1,33 @@
 ﻿#Requires -Modules PKI
+#Requires -RunAsAdministrator
 
 <#
     .SYNOPSIS
-        Generate certificate for application-based authentication in Azure
+        Obtains certificate used by WinRM over HTTPS
     .LINK
-        https://docs.microsoft.com/azure/active-directory/develop/howto-create-self-signed-certificate
+        https://learn.microsoft.com/troubleshoot/windows-client/system-management-components/configure-winrm-for-https
     .LINK
-        https://docs.microsoft.com/powershell/module/pki/new-selfsignedcertificate
+        https://learn.microsoft.com/powershell/module/pki/export-certificate
 #>
 
 [CmdletBinding()]
 param (
-        [Alias('Fqdn')]
+        [Parameter(ValueFromPipeline)]
+        [Alias('DnsName', 'Fqdn')]
         [string[]]
-    $ComputerFqdn = (@(
+        # Specifies certificate Subject Alternate Names to use for HTTPS remoting
+    $ComputerFqdn = (
+        @(
             ([Net.Dns]::GetHostEntry('')).HostName
             [Net.Dns]::GetHostName()
-        ) | Select-Object -Unique),
+        ) | Select-Object -Unique
+    ),
         [Alias('CertPath', 'Path')]
         [string]
+        # Specifies certificate export path
     $CertificatePath = $PWD,
         [switch]
+        # Specifies that certificate and private key should be exported
     $Export
 )
 
@@ -32,23 +39,20 @@ $KeyExportPolicy = if ($Export.IsPresent) {
     'Exportable'
 } else { 'NonExportable' }
 
-$ComputerFqdn
-
 $NewCertProps = @{
-    FriendlyName      = 'Computer self-signed {0}' -f $ComputerFqdn[0]
-    #Subject           = $ComputerFqdn
+    FriendlyName      = '{0} self-signed' -f $ComputerFqdn[0]
     DnsName           = $ComputerFqdn
     CertStoreLocation = 'Cert:\LocalMachine\My'
     KeyExportPolicy   = $KeyExportPolicy
     KeySpec           = 'Signature' #[Microsoft.CertificateServices.Commands.KeySpec]::Signature
+    TextExtension     = '2.5.29.37={text}1.3.6.1.5.5.7.3.1'     # server authentication
     KeyLength         = 4096
     HashAlgorithm     = 'SHA256'
 }
 
-$FilePath = Join-Path -Path $CertificatePath -ChildPath ($NewCertProps.FriendlyName + '.cer')
-
 $NewCertificate = New-SelfSignedCertificate @NewCertProps
 
+$FilePath = Join-Path -Path $CertificatePath -ChildPath ($NewCertProps.FriendlyName + '.cer')
 $NewCertificate | Export-Certificate -Type CERT -FilePath $FilePath
 
 if ($Export.IsPresent) {
