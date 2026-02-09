@@ -43,7 +43,7 @@ $NewCertProps = @{
     HashAlgorithm     = 'SHA256'
 }
 
-$FilePath = Join-Path -Path $CertificatePath -ChildPath ($FriendlyName + '.cer')
+$FilePath = Join-Path -Path $CertificatePath -ChildPath ($NewCertProps.FriendlyName + '.cer')
 
 $NewCertificate = New-SelfSignedCertificate @NewCertProps
 
