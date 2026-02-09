@@ -6,15 +6,12 @@
     .DESCRIPTION
         Export WinRM over HTTPS certificate
     .EXAMPLE
-        .\Get-WinRMCertificate.ps1 -ComputerFqdn 'myserver.domain.com'
+        .\Get-WinRMCertificate.ps1
 
-        This example configures HTTPS remoting using specified FQDN
+        This example exports Winrm over HTTPS remoting certificate
 #>
 [CmdletBinding()]
 param (
-        [string]
-        # Specifies certificate FQDN to use for HTTPS remoting
-    $ComputerFqdn = ([Net.Dns]::GetHostEntry('')).HostName,
         [Alias('CertPath', 'Path')]
         [string]
     $CertificatePath = $PWD
