@@ -5,9 +5,9 @@
     .SYNOPSIS
         Creates certificate for WinRM over HTTPS
     .LINK
-        https://learn.microsoft.com/troubleshoot/windows-client/system-management-components/configure-winrm-for-https
+        https://learn.microsoft.com/powershell/module/pki/new-selfsignedcertificate
     .LINK
-        https://learn.microsoft.com/powershell/module/pki/export-certificate
+        https://learn.microsoft.com/powershell/module/pki/export-pfxcertificate
 #>
 
 [CmdletBinding()]
@@ -18,7 +18,7 @@ param (
         # Specifies certificate Subject Alternate Names to use for HTTPS remoting
     $ComputerFqdn = (
         @(
-            ([Net.Dns]::GetHostEntry('')).HostName
+            [Net.Dns]::GetHostEntry('').HostName
             [Net.Dns]::GetHostName()
         ) | Select-Object -Unique
     ),
@@ -32,15 +32,13 @@ param (
 )
 
 end {
-    $KeyExportPolicy = if ($Export.IsPresent) {
-        'Exportable'
-    } else { 'NonExportable' }
+    $CertLocation = 'Cert:\LocalMachine\My'
 
     $NewCertProps = @{
         FriendlyName      = 'WinRM self-signed'
         DnsName           = $ComputerFqdn
-        CertStoreLocation = 'Cert:\LocalMachine\My'
-        KeyExportPolicy   = $KeyExportPolicy
+        CertStoreLocation = $CertLocation
+        KeyExportPolicy   = if ($Export) { 'Exportable' } else { 'NonExportable' }
         KeySpec           = 'Signature' #[Microsoft.CertificateServices.Commands.KeySpec]::Signature
         TextExtension     = '2.5.29.37={text}1.3.6.1.5.5.7.3.1'     # server authentication
         KeyLength         = 4096
@@ -57,9 +55,8 @@ end {
         $Password = Get-RandomString -Length 15
         $SecurePassword = ConvertTo-SecureString -AsPlainText -Force -String $Password
         $NewCertificate | Export-PfxCertificate -FilePath $FilePath -Password $SecurePassword
-        $NewCertificate | Remove-Item -DeleteKey
-        Get-Item -Path $FilePath | Add-Member -MemberType NoteProperty -Name Password -Value $Password -PassThru
+        $NewCertificate | Remove-Item #-DeleteKey
         Write-Warning -Message ('Write it down: {0}' -f $Password)
-        Import-PfxCertificate -FilePath $FilePath -Password $SecurePassword
+        $null = Import-PfxCertificate -FilePath $FilePath -Password $SecurePassword -CertStoreLocation $CertLocation
     }
 }
