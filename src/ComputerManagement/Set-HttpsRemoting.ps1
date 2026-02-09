@@ -28,10 +28,11 @@ $SelectorSplat = @{
     ResourceURI = 'winrm/config/listener'
     SelectorSet = @{ Address = '*'; Transport = 'https' }
 }
-if (Get-WSManInstance @SelectorSplat -ErrorAction SilentlyContinue) {
+try {
+    $null = Get-WSManInstance @SelectorSplat -ErrorAction Stop
     Write-Verbose -Message 'Replacing Cert thumbprint in existing listener'
     Set-WSManInstance @SelectorSplat -ValueSet $ValueSet
-} else {
+} catch {
     Write-Verbose -Message 'Creating new listener'
     $ValueSet.Hostname = $ComputerFqdn
     New-WSManInstance @SelectorSplat -ValueSet $ValueSet
