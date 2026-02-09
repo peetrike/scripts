@@ -13,10 +13,10 @@
 param (
         [Alias('Fqdn')]
         [string[]]
-    $ComputerFqdn = @(
+    $ComputerFqdn = (@(
             ([Net.Dns]::GetHostEntry('')).HostName
             [Net.Dns]::GetHostName()
-        ),
+        ) | Select-Object -Unique),
         [Alias('CertPath', 'Path')]
         [string]
     $CertificatePath = $PWD,
@@ -31,6 +31,8 @@ if ([Environment]::OSVersion.Version -notlike '10.*') {
 $KeyExportPolicy = if ($Export.IsPresent) {
     'Exportable'
 } else { 'NonExportable' }
+
+$ComputerFqdn
 
 $NewCertProps = @{
     FriendlyName      = 'Computer self-signed {0}' -f $ComputerFqdn[0]
