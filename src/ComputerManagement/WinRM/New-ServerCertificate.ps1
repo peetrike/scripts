@@ -13,6 +13,7 @@
 [CmdletBinding()]
 param (
         [Parameter(ValueFromPipeline)]
+        [PSDefaultValue(Help = 'computer FQDN and HostName')]
         [Alias('DnsName', 'Fqdn')]
         [string[]]
         # Specifies certificate Subject Alternate Names to use for HTTPS remoting
@@ -22,6 +23,7 @@ param (
             [Net.Dns]::GetHostName()
         ) | Select-Object -Unique
     ),
+        [PSDefaultValue(Help = 'Current location')]
         [Alias('CertPath', 'Path')]
         [string]
         # Specifies certificate export path
