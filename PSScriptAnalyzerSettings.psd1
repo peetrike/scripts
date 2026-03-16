@@ -1,4 +1,4 @@
-# Use the PowerShell extension setting `powershell.scriptAnalysis.settingsPath` to get the current workspace
+﻿# Use the PowerShell extension setting `powershell.scriptAnalysis.settingsPath` to get the current workspace
 # to use this PSScriptAnalyzerSettings.psd1 file to configure code analysis in Visual Studio Code.
 # This setting is configured in the workspace's `.vscode\settings.json`.
 #
@@ -52,18 +52,23 @@
             MaximumLineLength = 115
         }
 
-        <# 'PSAvoidOverwritingBuiltInCmdlets' = @{
+        PSAvoidOverwritingBuiltInCmdlets          = @{
             # https://learn.microsoft.com/powershell/utility-modules/psscriptanalyzer/rules/avoidoverwritingbuiltincmdlets
             'PowerShellVersion' = @(
-                #'desktop-2.0-windows'
-                #'desktop-3.0-windows'
-                #'desktop-4.0-windows'
+                'desktop-2.0-windows'
+                'desktop-3.0-windows'
+                'desktop-4.0-windows'
                 'desktop-5.1.14393.206-windows'
-                'core-6.1.0-windows'
+                #'core-6.1.0-windows'
                 #'core-6.1.0-linux'
                 #'core-6.1.0-macos'
             )
-        } #>
+        }
+
+        PSAvoidSemicolonsAsLineTerminators        = @{
+            # https://learn.microsoft.com/powershell/utility-modules/psscriptanalyzer/rules/avoidsemicolonsaslineterminators
+            Enable = $true
+        }
 
         <# PSAvoidUsingCmdletAliases = @{
             # https://learn.microsoft.com/powershell/utility-modules/psscriptanalyzer/rules/AvoidUsingCmdletAliases
@@ -128,7 +133,7 @@
             # https://learn.microsoft.com/powershell/utility-modules/psscriptanalyzer/rules/UseCompatibleSyntax
             Enable           = $true
             TargetedVersions = @(
-                '6.0'
+                '7.0'
                 '5.1'
                 '3.0'
             )
@@ -171,5 +176,11 @@
             # https://learn.microsoft.com/powershell/utility-modules/psscriptanalyzer/rules/usecorrectcasing
             Enable = $true
         }
+
+        <# PSUseSingularNouns                        = @{
+            # https://learn.microsoft.com/powershell/utility-modules/psscriptanalyzer/rules/UseSingularNouns
+            #Enable        = $true
+            NounAllowList = 'Data', 'Windows'
+        } #>
     }
 }
