@@ -33,9 +33,9 @@
         This script writes to screen and log file with various urgency levels
 #>
 
-param(
+param (
         [Parameter(Position = 0, ValueFromPipeline = $true)]
-        [String]
+        [string]
         # Log message to write
     $Message,
         [Parameter(Position = 1)]
@@ -55,16 +55,16 @@ param(
     $Level = 'Info',
         [bool]
     $WriteLog = $true,
-        [Switch]
+        [switch]
         # Don't add date to log message
     $NoDate,
-        [Switch]
+        [switch]
         # Add empty line to the end of message in log file
     $AddEmptyLine
 )
 
 begin {
-    Function Write-Log {
+    function Write-Log {
         param(
                 [Parameter(Position = 0, ValueFromPipeline = $true)]
                 [String]
