@@ -161,7 +161,6 @@ begin {
                     }
                 }
             }
-
         }
         end {
             if ($AddEmptyLine -or ($Type -like 'Empty')) {
