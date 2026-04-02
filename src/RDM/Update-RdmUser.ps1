@@ -85,11 +85,11 @@ foreach ($user in Get-RDMUser) {
     if ($notExist) {
         $user | Remove-RDMUser
     } else {
-        if (-not $user.FirstName) {
+        if ($AdUser.GivenName -ne $user.FirstName) {
             $needsUpdate = $true
             $user.FirstName = $AdUser.GivenName
         }
-        if (-not $user.LastName) {
+        if ($AdUser.Surname -ne $user.LastName) {
             $needsUpdate = $true
             $user.LastName = $AdUser.Surname
         }
