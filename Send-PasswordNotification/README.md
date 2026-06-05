@@ -49,10 +49,12 @@ The `user` element contains 2 parameters:
   account with SamAccountName instead of User Principal Name.  By default the
   user principal name is used.
 - `useManagerMail` parameter specifies, that e-mail address for sending
-  notification should be taken from user's manager account.  This is useful for
-  sending notifications about service account/admin user account password
-  expiration to users who are responsible for changing passwords on these
-  accounts.
+  notification should be taken from user's manager account.
+  This is useful for sending notifications about service account/admin user
+  account password expiration to users who are responsible for changing
+  passwords on these accounts.
+  When e-mail is sent to manager, an e-mail is sent even when user has never
+  logged on.
 
 ### Server
 
