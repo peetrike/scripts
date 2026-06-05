@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 1.8.4
+    .VERSION 1.9.0
     .GUID 4ff55e9c-f6ca-4549-be4c-92ff07b085e4
 
     .AUTHOR Peter Wawa
@@ -172,7 +172,6 @@ $searchProperties = @{
 }
 if ($conf.config.ou) {
     $searchProperties.SearchBase = $conf.config.ou
-    #$searchProperties.SearchScope = 'Subtree'
 }
 $ReportFile = $conf.config.reportfile
 if ($ReportFile) {
@@ -185,9 +184,13 @@ if ($ReportFile) {
         WhatIf            = $false
     }
 }
+$ExcludedOU = $conf.config.excludeou
 
 Get-ADUser @searchProperties |
-    Where-Object { -not ($_.CannotChangePassword -or $_.PasswordExpired) } |
+    Where-Object {
+        -not ($_.CannotChangePassword -or $_.PasswordExpired) -and
+        -not ($ExcludedOU -and $_.DistinguishedName -like "*$ExcludedOU")
+    } |
     ForEach-Object {
         $PasswordExpireDate = [datetime]::FromFileTime($_.'msDS-UserPasswordExpiryTimeComputed')
         $PasswordDays = (New-TimeSpan -End $PasswordExpireDate).days
