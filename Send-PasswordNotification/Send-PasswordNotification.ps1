@@ -221,7 +221,7 @@ Get-ADUser @searchProperties |
                 Date         = [datetime]::Now.ToString('s')
                 User         = $userName
                 Mail         = $userMail
-                Days         = $day
+                Days         = $PasswordDays
                 ErrorMessage = $null
             }
             # Write-Debug ('Message body: {0}' -f $mailSettings.Body)
