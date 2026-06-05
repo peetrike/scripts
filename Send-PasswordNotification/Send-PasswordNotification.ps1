@@ -195,25 +195,25 @@ Get-ADUser @searchProperties |
     ForEach-Object {
         $PasswordExpireDate = [datetime]::FromFileTime($_.'msDS-UserPasswordExpiryTimeComputed')
         $PasswordDays = (New-TimeSpan -End $PasswordExpireDate).days
-        Write-Debug -Message "pwdDays = $PasswordDays"
 
         $userName = if ($conf.config.user.item('useSamAccountName')) {
             '{0}\{1}' -f $AdDomain.NetBIOSName, $_.SamAccountName
         } else {
             $_.UserPrincipalName
         }
-
-        $userMail = if ($conf.config.user.item('useManagerMail')) {
-                # use manager's e-mail instead of user's, if available
-            $managerMail = (Get-ADUser -Identity $_.manager -Properties mail).mail
-            if ($managerMail) {
-                $managerMail
-            } else { $_.mail }
-        } else {
-            $_.mail
-        }
+        Write-Debug -Message "UserName = $userName, pwdDays = $PasswordDays"
 
         if ($PasswordDays -in $DaysBefore) {
+            $userMail = if ($conf.config.user.item('useManagerMail')) {
+                    # use manager's e-mail instead of user's, if available
+                $managerMail = (Get-ADUser -Identity $_.manager -Properties mail).mail
+                if ($managerMail) {
+                    $managerMail
+                } else { $_.mail }
+            } else {
+                $_.mail
+            }
+
             Write-Verbose -Message "User $username ($userMail), password expires in $PasswordDays days."
             $mailSettings.To = $userMail
             $mailSettings.Body = ($conf.config.mail.item('body').InnerText -f $userName, $day)
