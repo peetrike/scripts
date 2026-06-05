@@ -216,7 +216,7 @@ Get-ADUser @searchProperties |
 
             Write-Verbose -Message "User $username ($userMail), password expires in $PasswordDays days."
             $mailSettings.To = $userMail
-            $mailSettings.Body = ($conf.config.mail.item('body').InnerText -f $userName, $day)
+            $mailSettings.Body = ($conf.config.mail.item('body').InnerText -f $userName, $PasswordDays)
             $OutputProps = @{
                 Date         = [datetime]::Now.ToString('s')
                 User         = $userName
