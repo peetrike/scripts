@@ -41,6 +41,11 @@ The search scope is default scope for `Get-ADUser` cmdlet (SubTree).
 
 By default the search is performed on whole domain.
 
+### ExcludeOU
+
+The `excludeou` element allows to limit users from excluded OUs.
+Sending e-mail to users from excluded OU is not considered.
+
 ### User
 
 The `user` element contains 2 parameters:
