@@ -1,0 +1,183 @@
+﻿#Requires -Version 3.0
+#Requires -Modules ActiveDirectory
+
+<#PSScriptInfo
+
+    .VERSION 0.0.1
+    .GUID 616f40c2-2629-4b1e-bc1c-25707f1c31ce
+
+    .AUTHOR Peter Wawa
+    .COMPANYNAME !ZUM!
+    .COPYRIGHT (c) 2026 Peter Wawa.  All rights reserved.
+
+    .TAGS e-mail email notification Windows PSEdition_Desktop PSEdition_Core
+
+    .LICENSEURI https://github.com/peetrike/scripts/blob/main/LICENSE
+    .PROJECTURI https://github.com/peetrike/scripts
+    .ICONURI
+
+    .EXTERNALMODULEDEPENDENCIES ActiveDirectory
+    .REQUIREDSCRIPTS
+    .EXTERNALSCRIPTDEPENDENCIES
+
+    .RELEASENOTES
+
+    .PRIVATEDATA
+#>
+
+<#
+    .SYNOPSIS
+        Send e-mail about account expiration in near future
+    .DESCRIPTION
+        Send e-mail about account expiration in near future
+#>
+
+[CmdletBinding(
+    SupportsShouldProcess,
+    DefaultParameterSetName = 'Action'
+)]
+[OutputType([PSCustomObject])]
+param (
+        [Parameter(
+            Position = 0,
+            Mandatory,
+            HelpMessage = 'Specify number of days before password expiration',
+            ParameterSetName = 'Action'
+        )]
+        [int[]]
+        # Number of days before password expiration, when to send warning.  Can contain more than one number.
+    $DaysBefore,
+        [Parameter(
+            ParameterSetName = 'Action'
+        )]
+        [ValidateScript( {
+            if (Test-Path -Path $_ -PathType Leaf) { $true }
+            else {
+                throw 'Config file not found'
+            }
+        })]
+        [PSDefaultValue(Help = '<scriptname>.config in the same folder as script')]
+        [string]
+        # Configuration file to read.  By default the config file is
+        # in the same directory as script and has the same name with .config extension.
+    $ConfigFile = $(Join-Path -Path $PSScriptRoot -ChildPath ((Get-Item $PSCommandPath).BaseName + '.config')),
+        [switch]
+        # Return script result to standard output.  By default the script has
+        # no output.  The objects in standard output are same that are
+        # used to generate report .CSV file
+    $PassThru,
+        [Parameter(
+            Mandatory,
+            ParameterSetName = 'Version'
+        )]
+        [switch]
+        # Returns script version.
+    $Version
+)
+
+if ($PSCmdlet.ParameterSetName -like 'Version') {
+    $result = Select-String -Path $PSCommandPath -Pattern '^\s*\.VERSION (\d(\.\d){0,3})$'
+    $ver = $result.Matches.Groups[1].value
+    try {
+        [semver] $ver
+    } catch {
+        [version] $ver
+    }
+    return
+}
+
+$ConfigFile = Resolve-Path -Path $ConfigFile
+Write-Verbose -Message "Loading Config file: $ConfigFile"
+$conf = [xml] ''
+$conf.Load($ConfigFile)
+
+$mailSettings = @{
+    Subject    = $conf.config.mail.subject
+    From       = $conf.config.mail.from
+    SmtpServer = $conf.config.server
+    Encoding   = [text.encoding]::UTF8
+    Priority   = $conf.config.mail.priority
+    To         = ''
+    Body       = ''
+}
+if ($conf.config.mail.item('bodyAsHtml')) {
+    $mailSettings.BodyAsHtml = $true
+}
+
+$ReportFile = $conf.config.reportfile
+if ($ReportFile) {
+    $CsvProps = @{
+        NoTypeInformation = $true
+        UseCulture        = $true
+        Encoding          = 'utf8'
+        Path              = $ReportFile
+        Confirm           = $false
+        WhatIf            = $false
+    }
+}
+
+$DomainName = (Get-ADDomain).NetBIOSName
+$DaysBefore = $DaysBefore | Where-Object { $_ -gt 0 } | Sort-Object -Unique -Descending
+$UserProperties = @(
+    'AccountExpirationDate'
+    'mail'
+    'manager'
+)
+$ExpireSplat = @{
+    AccountExpiring = $true
+    UsersOnly       = $true
+    TimeSpan        = [timespan]::FromDays($DaysBefore[0] + 1)
+}
+if ($conf.config.ou) {
+    $ExpireSplat.SearchBase = $conf.config.ou
+}
+$ExcludedOU = $conf.config.excludeou
+$UsingManagerMail = [bool] $conf.config.user.item('useManagerMail')
+
+Search-ADAccount @ExpireSplat | Get-ADUser -Properties $UserProperties | Where-Object {
+    -not ($ExcludedOU -and $_.DistinguishedName -like "*$ExcludedOU") -and
+    ($UsingManagerMail -and $_.Manager -or $_.mail) -and
+    $DaysBefore -contains (New-TimeSpan -End $_.AccountExpirationDate).Days
+} | ForEach-Object {
+    $ExpireDays = (New-TimeSpan -End $_.AccountExpirationDate).Days
+    $userName = if ($conf.config.user.item('useSamAccountName')) {
+        '{0}\{1}' -f $DomainName, $_.SamAccountName
+    } else {
+        $_.UserPrincipalName
+    }
+    $mail = if ($UsingManagerMail) {
+        (Get-ADUser -Identity $_.Manager -Properties mail).mail
+    } else {
+        $_.mail
+    }
+    Write-Verbose -Message "User $username ($mail), account expires in $ExpireDays days."
+
+    $mailSettings.To = $mail
+    $mailSettings.Body = ($conf.config.mail.item('body').InnerText -f $userName, $ExpireDays)
+
+
+    if ($PSCmdLet.ShouldProcess($mail, 'Send e-mail message')) {
+        $OutputProps = @{
+            Date         = [datetime]::Now.ToString('s')
+            User         = $userName
+            Mail         = $mail
+            Days         = $ExpireDays
+            ErrorMessage = $null
+        }
+
+        try {
+            Send-MailMessage @mailSettings -ErrorAction Stop
+            $OutputProps.MailSent = $true
+        } catch {
+            $OutputProps.ErrorMessage = $_.Exception.Message
+            $OutputProps.MailSent = $false
+        }
+        $OutputObject = [PSCustomObject] $OutputProps
+        if ($ReportFile) {
+            $OutputObject | Export-Csv @CsvProps -Append
+        }
+        if ($PassThru) {
+            $OutputObject
+        }
+    }
+}
