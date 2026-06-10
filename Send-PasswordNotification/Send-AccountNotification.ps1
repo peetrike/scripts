@@ -2,7 +2,7 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-    .VERSION 0.0.1
+    .VERSION 0.0.2
     .GUID 616f40c2-2629-4b1e-bc1c-25707f1c31ce
 
     .AUTHOR Peter Wawa
@@ -20,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.2] 2026.06.10 - Initial version
         [0.0.1] 2026.06.10 - Initial version
 
     .PRIVATEDATA
@@ -27,9 +28,9 @@
 
 <#
     .SYNOPSIS
-        Send e-mail about account expiration in near future
+        Send e-mail about AD account expiration
     .DESCRIPTION
-        Send e-mail about account expiration in near future
+        Send e-mail notification about AD account expiration in near future
 #>
 
 [CmdletBinding(
@@ -41,11 +42,11 @@ param (
         [Parameter(
             Position = 0,
             Mandatory,
-            HelpMessage = 'Specify number of days before password expiration',
+            HelpMessage = 'Specify number of days before account expiration',
             ParameterSetName = 'Action'
         )]
         [int[]]
-        # Number of days before password expiration, when to send warning.  Can contain more than one number.
+        # Number of days before account expiration, when to send warning.  Can contain more than one number.
     $DaysBefore,
         [Parameter(
             ParameterSetName = 'Action'
@@ -117,7 +118,7 @@ if ($ReportFile) {
 }
 
 $DomainName = (Get-ADDomain).NetBIOSName
-$DaysBefore = $DaysBefore | Where-Object { $_ -gt 0 } | Sort-Object -Unique -Descending
+$DaysBefore = $DaysBefore | Where-Object { $_ -ge 0 } | Sort-Object -Unique -Descending
 $UserProperties = @(
     'AccountExpirationDate'
     'mail'
