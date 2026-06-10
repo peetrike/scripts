@@ -31,6 +31,30 @@
         Send e-mail about AD account expiration
     .DESCRIPTION
         Send e-mail notification about AD account expiration in near future
+    .PARAMETER WhatIf
+        Shows what would happen if the script runs.
+        The script is not run.
+    .PARAMETER Confirm
+        Prompts you for confirmation before sending out e-mail messages
+    .EXAMPLE
+        Send-AccountNotification.ps1 -DaysBefore 5,1
+
+        Sends e-mail to users, whose account expires within 5 or 1 days.
+    .EXAMPLE
+        Send-AccountNotification.ps1 7 -ConfigFile my.config
+
+        Sends notification 7 days before account expires.  Uses custom configuration file.
+    .INPUTS
+        None
+    .OUTPUTS
+        None
+    .NOTES
+        The script requires a config file.  You can download sample config file from
+        https://github.com/peetrike/scripts/blob/main/Send-PasswordNotification/Send-AccountNotification.config
+    .LINK
+        about_ActiveDirectory
+    .LINK
+        Send-MailMessage
 #>
 
 [CmdletBinding(
