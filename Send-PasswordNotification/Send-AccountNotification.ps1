@@ -2,7 +2,6 @@
 #Requires -Modules ActiveDirectory
 
 <#PSScriptInfo
-
     .VERSION 0.0.1
     .GUID 616f40c2-2629-4b1e-bc1c-25707f1c31ce
 
@@ -21,6 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
+        [0.0.1] 2026.06.10 - Initial version
 
     .PRIVATEDATA
 #>
