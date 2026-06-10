@@ -20,7 +20,7 @@
     .EXTERNALSCRIPTDEPENDENCIES
 
     .RELEASENOTES
-        [0.0.2] 2026.06.10 - Initial version
+        [0.0.2] 2026.06.10 - Add 0 as valid value for DaysBefore parameter.
         [0.0.1] 2026.06.10 - Initial version
 
     .PRIVATEDATA
